@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     # default
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -93,14 +95,25 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'your_pythonanywhere_username$your_db_name',
+#         'USER': 'your_pythonanywhere_username',
+#         'PASSWORD': 'your_mysql_password',
+#         'HOST': 'postgresql://petfinderdb_user:dtceBQrKjzVqo6jp3IN6mh7Tk3Ao0t95@dpg-cv8c2kt2ng1s73c6hk9g-a.frankfurt-postgres.render.com/petfinderdb',
+#         'PORT': '3306',
+#     }
+# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(default=os.getenv("postgresql://petfinderdb_user:dtceBQrKjzVqo6jp3IN6mh7Tk3Ao0t95@dpg-cv8c2kt2ng1s73c6hk9g-a.frankfurt-postgres.render.com/petfinderdb"))
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -139,8 +152,11 @@ USE_TZ = True # Enable time zone support
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+STATIC_ROOT = BASE_DIR / "staticfiles" #added
 STATIC_URL = 'static/'
 
+# Enable compression & caching
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
