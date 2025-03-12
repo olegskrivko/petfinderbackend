@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*r^7em06oy*8@0-gr$b_tt0wk4j=jttvsi)+!q&c9!=bjqcl8w'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -101,19 +101,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'your_pythonanywhere_username$your_db_name',
-#         'USER': 'your_pythonanywhere_username',
-#         'PASSWORD': 'your_mysql_password',
-#         'HOST': 'postgresql://petfinderdb_user:dtceBQrKjzVqo6jp3IN6mh7Tk3Ao0t95@dpg-cv8c2kt2ng1s73c6hk9g-a.frankfurt-postgres.render.com/petfinderdb',
-#         'PORT': '3306',
-#     }
-# }
+
 DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("postgresql://petfinderdb_user:dtceBQrKjzVqo6jp3IN6mh7Tk3Ao0t95@dpg-cv8c2kt2ng1s73c6hk9g-a.frankfurt-postgres.render.com/petfinderdb"))
+    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -248,3 +240,15 @@ SIMPLE_JWT = {
 #     SECURE_SSL_REDIRECT = True
 #     SESSION_COOKIE_SECURE = True
 #     CSRF_COOKIE_SECURE = True
+
+# Add Cloudinary settings
+
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name='dymne7cde',
+    api_key='973684546521283',
+    api_secret='EUe6vH2blGMQfXf7q_-Q4mULoXA'
+)
