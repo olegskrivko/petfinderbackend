@@ -1,13 +1,15 @@
 # articles/models.py
 from django.db import models
 from django.utils.text import slugify
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
+from django.conf import settings
 from taggit.managers import TaggableManager
 
 class Article(models.Model):
     title = models.CharField(max_length=200, unique=True)
     summary = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    # author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ Correct
     tags = TaggableManager()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

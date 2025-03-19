@@ -50,8 +50,11 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',  # Add this line for token authentication
     'rest_framework_simplejwt',
 
+
+
     # My apps
     'authentication',  # Your authentication app
+    'payments',
     'pets',  
     'shelters',
     'core',
@@ -59,7 +62,14 @@ INSTALLED_APPS = [
     'user_profile',
 
 ]
-
+    # 'django.contrib.sites',  # Required for Django AllAuth
+    # 'rest_framework',
+    # 'rest_framework.authtoken',  # Required for token authentication
+    # 'dj_rest_auth',
+    # 'allauth',  # (Optional) Required for social authentication
+    # 'allauth.account',
+    # 'allauth.socialaccount',
+# SITE_ID = 1  # Required for Django AllAuth
 MIDDLEWARE = [
     # added
     'corsheaders.middleware.CorsMiddleware',
@@ -79,8 +89,8 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [], # ✅ Leave this empty if templates are inside apps
+        'APP_DIRS': True, # ✅ Django will automatically look inside app templates/
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -104,10 +114,48 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'petradardb',
+#         'USER': 'postgres',
+#         'PASSWORD': 'postgres',
+#         'HOST': 'localhost',  # e.g., 'localhost' or a remote DB server
+#         'PORT': '5432',  # Default PostgreSQL port
+#     }
+# }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'defaultdb',
+#         'USER': 'avnadmin',
+#         'PASSWORD': 'AVNS_6jl4lFHC7LcQgLTsgnV',
+#         'HOST': 'pg-130a764c-olegs-4d59.h.aivencloud.com',  # e.g., 'localhost' or a remote DB server
+#         'PORT': '19323',  # Default PostgreSQL port
+#         'OPTIONS': {
+#             'sslmode': 'require',  # Ensures a secure SSL connection
+#         },
+#     }
+# }
 
 DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
+    'default': {
+        'ENGINE': os.getenv("DATABASES_ENGINE"),
+        'NAME': os.getenv("DATABASES_NAME"),
+        'USER': os.getenv("DATABASES_USER"),
+        'PASSWORD': os.getenv("DATABASES_PASSWORD"),
+        'HOST': os.getenv("DATABASES_HOST"),  # e.g., 'localhost' or a remote DB server
+        'PORT': os.getenv("DATABASES_PORT"),
+        'OPTIONS': {
+            'sslmode': 'require',  # Ensures a secure SSL connection
+        },
+    }
 }
+
+# DATABASES = {
+#     "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -200,6 +248,7 @@ REST_FRAMEWORK = {
     # Authentication classes
     'DEFAULT_AUTHENTICATION_CLASSES': [
         #'rest_framework.authentication.SessionAuthentication',  # Default session-based authentication
+        #'rest_framework.authentication.TokenAuthentication',  # Secondary auth
         'rest_framework_simplejwt.authentication.JWTAuthentication',  # JSON Web Token (JWT) authentication (you can enable either or both)
     ],
     # Permission classes
@@ -223,13 +272,28 @@ REST_FRAMEWORK = {
     # # Exception handler settings
     # 'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',  # Custom exception handler if needed
 }
+REST_USE_JWT = True
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "your-email@gmail.com"
+# EMAIL_HOST_PASSWORD = "your-email-password"
+# Looking to send emails in production? Check out our Email API/SMTP product!
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+
+AUTH_USER_MODEL = "authentication.CustomUser"
 
 # Simple JWT settings (you can adjust the time for token expiration)
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Access token lifetime minutes=15 # Increase to 7 days for development
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),  # Refresh token lifetime days=1 # Optional: Increase refresh token lifetime
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': True, # Issue new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
     'ALGORITHM': 'HS256',  # Algorithm to use for signing
     'SIGNING_KEY': SECRET_KEY,  # Secret key used for JWT signing
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -251,7 +315,16 @@ import cloudinary.uploader
 import cloudinary.api
 
 cloudinary.config(
-    cloud_name='dymne7cde',
-    api_key='973684546521283',
-    api_secret='EUe6vH2blGMQfXf7q_-Q4mULoXA'
+    cloud_name=os.getenv("cloud_name"),
+    api_key=os.getenv("api_key"),
+    api_secret=os.getenv("api_secret")
 )
+
+# Configure Stripe in Django
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Debugging: Print to ensure it's loaded (Remove in production)
+# print("STRIPE_SECRET_KEY:", STRIPE_SECRET_KEY)
+# print(os.getenv("STRIPE_SECRET_KEY"))

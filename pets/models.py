@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.conf import settings
+from django.db import models
 
 class Pet(models.Model):
     SIZE_CHOICES = [
@@ -83,7 +84,8 @@ class Pet(models.Model):
     # Timestamp for when the entry is created
     created_at = models.DateTimeField(auto_now_add=True, null=True)  # Automatically set the current date and time when a new pet is added
     # Post author is required
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pets', verbose_name="Autors") # Allows reverse lookup using user.pets.all()
+    #author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pets', verbose_name="Autors") # Allows reverse lookup using user.pets.all()
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ Fix here
     # Post author contact phone number is optional
     contact_phone = models.IntegerField(blank=True, null=True, verbose_name="Kontakttālrunis")
     # Phone code is optional  
@@ -132,7 +134,8 @@ class PetSightingHistory(models.Model):
     # Timestamp of when the sighting occurred
     timestamp = models.DateTimeField(auto_now_add=True, null=True)
     # User who reported the sighting
-    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_sightings')
+    #reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_sightings')
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ Fix here
     # Optional: Additional notes or information about the sighting
     notes = models.TextField(blank=True, null=True)
     #is_closed = models.BooleanField()
@@ -163,7 +166,8 @@ class PetSightingHistory(models.Model):
 
 
 class UserFavorites(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    #user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ Fix here
     pet = models.ForeignKey(Pet, on_delete=models.CASCADE)
 
     class Meta:
