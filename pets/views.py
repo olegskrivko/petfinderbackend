@@ -88,7 +88,8 @@ class PetFilter(filters.FilterSet):
 
         # Apply the Subquery filter to return pets with the matching first status
         return queryset.filter(
-            pk__in=Subquery(first_status_filtered.values('pet')[:1])  # Slice after filtering
+            pk__in=Subquery(first_status_filtered.values('pet'))  # Slice after filtering
+            #pk__in=Subquery(first_status_filtered.values('pet'))  # ✅ Remove `[:1]`
         )
 
 
@@ -289,7 +290,8 @@ class PetSightingCreate(APIView):
         event_occurred_at = request.data.get('event_occurred_at')  # Ensure this is a valid datetime
         notes = request.data.get('notes', '')  # Optional field, default to an empty string
         reporter_id = request.data.get('reporter')  # ID of the reporter
-        image = request.data.get('image')
+        #image = request.data.get('image')
+        image = request.FILES.get('image')  # ✅ Fix: Use `.FILES` for file uploads
         print( request.data)
         # Validate the 'status' field
         try:
