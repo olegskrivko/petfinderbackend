@@ -15,8 +15,9 @@ class PetSightingHistorySerializer(serializers.ModelSerializer):
     status = serializers.IntegerField()  # This ensures you return the raw integer value, not the display string
     reporter = UserSerializer(read_only=True)  # Serialize the User field
     #reporter = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)  # Make reporter writable (User ID)
-    image = serializers.ImageField(required=False)  # Handle image field (optional)
-
+    image = serializers.ImageField(required=False, allow_null=True)  # Handle image field (optional)  # Handle image field (optional)
+    pet = serializers.PrimaryKeyRelatedField(queryset=Pet.objects.all())  # ✅ Ensure `pet` exists
+    event_occurred_at = serializers.DateTimeField(required=False, allow_null=True)  # ✅ Ensure it's an aware datetime
     class Meta:
         model = PetSightingHistory
         fields = '__all__' 
