@@ -36,18 +36,7 @@ class PetFilter(filters.FilterSet):
     gender = filters.NumberFilter(field_name='gender', lookup_expr='exact')  # Filter for gender
     size = filters.NumberFilter(field_name='size', lookup_expr='exact')  # Filter for size
     pattern = filters.NumberFilter(field_name='pattern', lookup_expr='exact')  # Filter for size
-    # age_min = filters.NumberFilter(field_name='age', lookup_expr='gte')  # Minimum age filter
-    # age_max = filters.NumberFilter(field_name='age', lookup_expr='lte')  # Maximum age filter
-    # date = filters.DateFilter(method='filter_by_date')  # URL parameter "date"
-    #date = django_filters.DateFilter(method='filter_by_date')  # Filter by date (specific event date)
-        # Filter for created_at (creation date of the pet)
-    #created_at = django_filters.DateFilter(method='filter_by_created_at')
-    # Filter for created_at field, but expect the URL query param 'date'
-    #date = django_filters.DateFilter(field_name='created_at', lookup_expr='exact', label="Created At")
-   # Filter for created_at field using DateFilter
-    #date = filters.DateFilter(field_name='created_at', lookup_expr='date', label="Created At")
-    # Map the 'date' parameter to the 'timestamp' field with greater than or equal filter
-    #date = filters.DateFilter(field_name='created_at', lookup_expr='gte', label="Date")
+
     #date = filters.IsoDateTimeFilter(field_name='created_at', lookup_expr='gte', label="Filter Pets by Creation Date")
     date = filters.IsoDateTimeFilter(method='filter_by_event_date', label="Filter by Event Date")
     # Filter for first status in PetSightingHistory
@@ -176,22 +165,92 @@ class PetViewSet(viewsets.ModelViewSet):
     #     print("hello from perform_create", serializer)
     #     # Assign the logged-in user as the author
     #     serializer.save(author=self.request.user)
-    def perform_create(self, serializer):
-        print("hello from perform_create", serializer)
-        """ ✅ Create a new Pet and its first PetSightingHistory automatically (Fix) """
-        # Save the Pet instance first
-        pet = serializer.save(author=self.request.user) # Save pet and assign author
-        # Save Pet instance (author is assigned inside serializer)
-        #pet = serializer.save()
+    # def perform_create(self, serializer):
+    #     print("hello from perform_create", serializer)
+    #     """ ✅ Create a new Pet and its first PetSightingHistory automatically (Fix) """
+    #     # Save the Pet instance first
+
+    #       # ✅ Fix: Get the uploaded image from request.FILES
+    #     image = self.request.FILES.get('image')  
+    #     #pet = serializer.save(author=self.request.user) # Save pet and assign author
+    #     pet = serializer.save(author=self.request.user, image=image)
+    #     # Save Pet instance (author is assigned inside serializer)
+    #     #pet = serializer.save()
         
 
-        # Retrieve latitude, longitude, and status from the request data
+    #     # Retrieve latitude, longitude, and status from the request data
+    #     latitude = self.request.data.get("latitude")
+    #     longitude = self.request.data.get("longitude")
+    #     status = self.request.data.get("status")
+    #     event_occurred_at = self.request.data.get("date") + " " + self.request.data.get("time")  # Combine date & time
+    
+    #     try:
+    #         event_occurred_at = datetime.strptime(event_occurred_at, "%Y-%m-%d %H:%M")
+    #         event_occurred_at = make_aware(event_occurred_at)  # ✅ Convert to timezone-aware datetime
+    #     except ValueError:
+    #         event_occurred_at = now()  # ✅ Default to current timestamp
+
+    #     # Validate required fields
+    #     if not latitude or not longitude or not status:
+    #         return Response(
+    #             {"error": "Latitude, longitude, and status are required"},
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+
+    #     try:
+    #         # Convert latitude and longitude to Decimal for database storage
+    #         latitude = Decimal(latitude)
+    #         longitude = Decimal(longitude)
+    #     except (ValueError, TypeError):
+    #         return Response(
+    #             {"error": "Invalid latitude or longitude format"},
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+
+    #     # Ensure the status is a valid integer
+    #     try:
+    #         status = int(status)
+    #         if status not in dict(PetSightingHistory.STATUS_CHOICES):
+    #             return Response({"error": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
+    #     except ValueError:
+    #         return Response({"error": "Invalid status format"}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # Convert event_occurred_at to a valid datetime
+    #     try:
+    #         event_occurred_at = datetime.strptime(event_occurred_at, "%Y-%m-%d %H:%M")
+    #     except ValueError:
+    #         event_occurred_at = now()  # Fallback to current timestamp if invalid
+
+    #     # Create the first sighting record
+    #     PetSightingHistory.objects.create(
+    #         pet=pet,
+    #         status=status,
+    #         latitude=latitude,
+    #         longitude=longitude,
+    #         event_occurred_at=event_occurred_at,
+    #         reporter=self.request.user  # Set the user who created the pet as the first reporter
+    #     )
+
+    #     print("✅ PetSightingHistory created successfully for pet:", pet.id)
+    
+    def perform_create(self, serializer):
+        print("🚀 Incoming Data:", self.request.data)  # Debugging info
+
+        """ ✅ Create a new Pet and its first PetSightingHistory automatically """
+
+        # ✅ Fix: Get the uploaded image from request.FILES
+        image = self.request.FILES.get('image')  
+
+        # ✅ Save Pet instance (assign author and image)
+        pet = serializer.save(author=self.request.user, image=image)  
+
+        # Retrieve required fields
         latitude = self.request.data.get("latitude")
         longitude = self.request.data.get("longitude")
         status = self.request.data.get("status")
         event_occurred_at = self.request.data.get("date") + " " + self.request.data.get("time")  # Combine date & time
 
-        # Validate required fields
+        # ✅ Validate required fields before using them
         if not latitude or not longitude or not status:
             return Response(
                 {"error": "Latitude, longitude, and status are required"},
@@ -199,7 +258,7 @@ class PetViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            # Convert latitude and longitude to Decimal for database storage
+            # ✅ Convert latitude and longitude to Decimal
             latitude = Decimal(latitude)
             longitude = Decimal(longitude)
         except (ValueError, TypeError):
@@ -208,7 +267,7 @@ class PetViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Ensure the status is a valid integer
+        # ✅ Ensure status is a valid integer
         try:
             status = int(status)
             if status not in dict(PetSightingHistory.STATUS_CHOICES):
@@ -216,13 +275,14 @@ class PetViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({"error": "Invalid status format"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Convert event_occurred_at to a valid datetime
+        # ✅ Convert event_occurred_at to timezone-aware datetime
         try:
             event_occurred_at = datetime.strptime(event_occurred_at, "%Y-%m-%d %H:%M")
+            event_occurred_at = make_aware(event_occurred_at)  # Convert to timezone-aware datetime
         except ValueError:
-            event_occurred_at = now()  # Fallback to current timestamp if invalid
+            event_occurred_at = now()  # Default to current timestamp if invalid
 
-        # Create the first sighting record
+        # ✅ Create the first sighting record
         PetSightingHistory.objects.create(
             pet=pet,
             status=status,
@@ -233,22 +293,14 @@ class PetViewSet(viewsets.ModelViewSet):
         )
 
         print("✅ PetSightingHistory created successfully for pet:", pet.id)
-    
+
+
     def retrieve(self, request, pk=None):
         """ ✅ Allow all users to retrieve pets """
         pet = get_object_or_404(Pet, pk=pk)  # Remove `author=request.user`
         serializer = self.get_serializer(pet)
         return Response(serializer.data)
-    # def retrieve(self, request, pk=None):
-    #     """
-    #     Retrieve a specific pet by ID.
-    #     """
-    #     print("retrieve")
-    #     pet = get_object_or_404(Pet, pk=pk, author=request.user)
-    #     print("pet", pet)
-    #     serializer = self.get_serializer(pet)
-    #     print("serializer", serializer)
-    #     return Response(serializer.data)
+
     
     def update(self, request, pk=None):
         """
