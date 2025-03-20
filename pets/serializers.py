@@ -63,7 +63,11 @@ class PetSerializer(serializers.ModelSerializer):
     primary_color_display = serializers.CharField(source='get_primary_color_display', read_only=True)
     secondary_color_display = serializers.CharField(source='get_secondary_color_display', read_only=True)
     notes_display = serializers.CharField(source='get_notes_display', read_only=True)
-
+    image = serializers.ImageField(required=False, allow_null=True)  # ✅ Fix: Allow empty image
+    extra_image_1 = serializers.ImageField(required=False, allow_null=True)
+    extra_image_2 = serializers.ImageField(required=False, allow_null=True)
+    extra_image_3 = serializers.ImageField(required=False, allow_null=True)
+    extra_image_4 = serializers.ImageField(required=False, allow_null=True)
 
     author = UserSerializer(read_only=True)  # Add the UserSerializer here
     
