@@ -117,17 +117,19 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+# LOCAL DB DEVELOPMENT
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': 'petradardb',
 #         'USER': 'postgres',
 #         'PASSWORD': 'postgres',
-#         'HOST': 'localhost',  # e.g., 'localhost' or a remote DB server
-#         'PORT': '5432',  # Default PostgreSQL port
+#         'HOST': 'localhost',
+#         'PORT': '5432',
 #     }
 # }
 
+# PROD DB
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -141,7 +143,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         },
 #     }
 # }
-
+# GOOOD
 DATABASES = {
     'default': {
         'ENGINE': os.getenv("DATABASES_ENGINE"),
@@ -313,21 +315,21 @@ SIMPLE_JWT = {
 
 # Add Cloudinary settings
 
-# import cloudinary
-# import cloudinary.uploader
-# import cloudinary.api
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
-# cloudinary.config(
-#     cloud_name=os.getenv("cloud_name"),
-#     api_key=os.getenv("api_key"),
-#     api_secret=os.getenv("api_secret")
-# )
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
 
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-}
+# CLOUDINARY_STORAGE = {
+#     "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+#     "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+#     "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+# }
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 

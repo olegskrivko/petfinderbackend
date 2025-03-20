@@ -113,11 +113,19 @@ class Pet(models.Model):
     # extra_image_2 = CloudinaryField('image', blank=True, null=True)
     # extra_image_3 = CloudinaryField('image', blank=True, null=True)
     # extra_image_4 = CloudinaryField('image', blank=True, null=True)
-    image = cloudinary.models.CloudinaryField('image', blank=True, null=True)
-    extra_image_1 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
-    extra_image_2 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
-    extra_image_3 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
-    extra_image_4 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # ✅ Store image as a URL (Cloudinary URL)
+    # image = models.URLField(null=True, blank=True)
+    pet_image = models.CharField(max_length=255, null=True, blank=True)  # ✅ More flexible than URLField
+    # extra_image_1 = models.URLField(null=True, blank=True)
+    # extra_image_2 = models.URLField(null=True, blank=True)
+    # extra_image_3 = models.URLField(null=True, blank=True)
+    # extra_image_4 = models.URLField(null=True, blank=True)
+
+    # image = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # extra_image_1 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # extra_image_2 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # extra_image_3 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # extra_image_4 = cloudinary.models.CloudinaryField('image', blank=True, null=True)
     # class Meta:
     #     verbose_name = "Pet"
     #     verbose_name_plural = "Pets"
@@ -126,7 +134,8 @@ class Pet(models.Model):
     #     return self.name
 
     def __str__(self):
-        return self.name if self.name else f"Pet ID {self.id}"  # Ensures __str__ always returns a string
+        return f"Pet {self.id}" if self.id else "New Pet"
+        #return self.id if self.id else f"Pet ID {self.id}"  # Ensures __str__ always returns a string
     
     class Meta:
         #db_table = 'Mājdzīvnieki'  # Custom table name
@@ -152,14 +161,16 @@ class PetSightingHistory(models.Model):
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ✅ Fix here
     # Optional: Additional notes or information about the sighting
     notes = models.TextField(blank=True, null=True)
+    pet_image = models.CharField(max_length=255, null=True, blank=True) 
     #is_closed = models.BooleanField()
     #comment_success_story_or_not
     # Add an image field for pet photos
     # image = models.ImageField(upload_to='sightnings_images/', blank=True, null=True, verbose_name="Attēls")
     # ✅ CloudinaryField for uploaded sighting images
     #image = CloudinaryField('image', blank=True, null=True)
-    image = cloudinary.models.CloudinaryField('image', blank=True, null=True)
-    
+    # image = models.URLField(null=True, blank=True)
+    # image = cloudinary.models.CloudinaryField('image', blank=True, null=True)
+    # image = models.URLField(null=True, blank=True)
     #is_dead/blurred/sensitive
     STATUS_CHOICES = [
         (1, 'Pazudis'), # Lost
@@ -179,7 +190,7 @@ class PetSightingHistory(models.Model):
         ordering = ['-timestamp']  # Newest status changes first. Change to 'timestamp' for oldest first.
 
     def __str__(self):
-        return f"{self.pet.name} - {self.get_status_display()} at {self.timestamp}"
+        return f"{self.pet.id} - {self.get_status_display()} at {self.timestamp}"
 
 
 
@@ -191,5 +202,10 @@ class UserFavorites(models.Model):
     class Meta:
         unique_together = ('user', 'pet')  # Ensure each user can only add a pet once
 
+    # class Meta:
+    #     constraints = [
+    #     models.UniqueConstraint(fields=['user', 'pet'], name='unique_user_pet')
+    # ]
+
     def __str__(self):
-        return f"{self.user.username} - {self.pet.name}"
+        return f"{self.user.username} - {self.pet.id}"

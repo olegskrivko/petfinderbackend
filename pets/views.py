@@ -29,6 +29,7 @@ from rest_framework.permissions import BasePermission
 from decimal import Decimal
 from django.utils.timezone import now
 from rest_framework.parsers import MultiPartParser, FormParser
+import cloudinary.uploader
 
 class PetFilter(filters.FilterSet):
     species = filters.NumberFilter(field_name='species', lookup_expr='exact')
@@ -134,7 +135,7 @@ class PetViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_class = PetFilter  # Ensure this is used for filtering
     # Add search_fields here directly for search functionality
-    search_fields = ['name', 'notes']  # Fields you want to allow search on
+    search_fields = ['notes']  # Fields you want to allow search on
     #ordering_fields = ['name', 'age']  # Optional: Fields that can be used for ordering
 
     def get_queryset(self):
@@ -234,15 +235,54 @@ class PetViewSet(viewsets.ModelViewSet):
     #     print("✅ PetSightingHistory created successfully for pet:", pet.id)
     
     def perform_create(self, serializer):
-        print("🚀 Incoming Data:", self.request.data)  # Debugging info
+        print("🚀 Incoming Data:", self.request.data)
+        print("🚀 Incoming FILES:", self.request.FILES)
+        image = self.request.FILES.get('image')
+        # ✅ Upload image to Cloudinary and get the URL
+        uploaded_image_url = None
+        if image:
+            uploaded_image = cloudinary.uploader.upload(image)
+            uploaded_image_url = uploaded_image.get("secure_url")
+            print("📸 Cloudinary Uploaded Image URL:", uploaded_image_url)  # Debugging
 
         """ ✅ Create a new Pet and its first PetSightingHistory automatically """
-
+ 
         # ✅ Fix: Get the uploaded image from request.FILES
-        image = self.request.FILES.get('image')  
+        """ ✅ Upload image to Cloudinary before saving the pet """
+        # image = self.request.FILES.get('image')  # ✅ Get uploaded image from React
+        # extra_images = {
+        #     "extra_image_1": self.request.FILES.get("extra_image_1"),
+        #     "extra_image_2": self.request.FILES.get("extra_image_2"),
+        #     "extra_image_3": self.request.FILES.get("extra_image_3"),
+        #     "extra_image_4": self.request.FILES.get("extra_image_4"),
+        # }
+
+        # uploaded_image_url = None
+        # uploaded_extra_images = {}
+
+        # ✅ Upload main image to Cloudinary
+        # if image:
+        #     uploaded_image = cloudinary.uploader.upload(image)
+        #     print("📸 Cloudinary Image Upload Response:", uploaded_image)  # Debugging step
+        #     uploaded_image_url = uploaded_image.get("secure_url")
+
+        # # ✅ Upload extra images to Cloudinary
+        # for key, img in extra_images.items():
+        #     if img:
+        #         uploaded_img = cloudinary.uploader.upload(img)
+        #         uploaded_extra_images[key] = uploaded_img.get("secure_url")
 
         # ✅ Save Pet instance (assign author and image)
-        pet = serializer.save(author=self.request.user, image=image)  
+   # ✅ Save the pet with Cloudinary image URLs
+        pet = serializer.save(
+            author=self.request.user,
+            # image=uploaded_image_url,
+            pet_image=uploaded_image_url  # Store URL, NOT file
+            # extra_image_1=uploaded_extra_images.get("extra_image_1"),
+            # extra_image_2=uploaded_extra_images.get("extra_image_2"),
+            # extra_image_3=uploaded_extra_images.get("extra_image_3"),
+            # extra_image_4=uploaded_extra_images.get("extra_image_4"),
+        )
 
         # Retrieve required fields
         latitude = self.request.data.get("latitude")
@@ -343,7 +383,7 @@ class PetSightingCreate(APIView):
         notes = request.data.get('notes', '')  # Optional field, default to an empty string
         reporter_id = request.data.get('reporter')  # ID of the reporter
         #image = request.data.get('image')
-        image = request.FILES.get('image')  # ✅ Fix: Use `.FILES` for file uploads
+        # image = request.FILES.get('image')  # ✅ Fix: Use `.FILES` for file uploads
         print( request.data)
         # Validate the 'status' field
         try:
@@ -396,7 +436,7 @@ class PetSightingCreate(APIView):
             #fix here repoter
             #reporter=pet.author,  # The pet creator is the first sighting reporter
             reporter=request.user,
-            image=image
+            # image=image
             # reporter=reporter,
         )
 
@@ -410,7 +450,7 @@ class PetSightingCreate(APIView):
             "event_occurred_at": sighting.event_occurred_at,
             "notes": sighting.notes,
             "reporter": sighting.reporter.id,
-            "image_url": sighting.image.url if sighting.image else None  # Add image URL to the response
+            # "image_url": sighting.image.url if sighting.image else None  # Add image URL to the response
         }, status=status.HTTP_201_CREATED)
     
 
