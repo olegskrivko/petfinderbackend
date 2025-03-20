@@ -33,7 +33,9 @@ class ForgotPasswordSerializer(serializers.Serializer):
         
         user.generate_password_reset_token()  # ✅ Calls model method
         
-        reset_url = f"http://127.0.0.1:8000/api/auth/reset-password/{user.password_reset_token}/"
+        # reset_url = f"http://127.0.0.1:8000/api/auth/reset-password/{user.password_reset_token}/"
+        reset_url = f"https://petfinderbackend-production.up.railway.app/api/auth/reset-password/{user.password_reset_token}/"
+        
         subject = "Reset Your Password"
         message = f"Click the link below to reset your password:\n\n{reset_url}"
         
@@ -174,7 +176,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         
     def send_verification_email(self, user):
         """Send email with activation link using HTML template."""
-        activation_url = f"http://127.0.0.1:8000/api/auth/activate/{user.activation_token}/"
+        # activation_url = f"http://127.0.0.1:8000/api/auth/activate/{user.activation_token}/"
+        activation_url = f"https://petfinderbackend-production.up.railway.app/api/auth/activate/{user.activation_token}/"
         
         subject = "Verify Your Email"
         html_message = render_to_string("emails/email_verification.html", {"activation_url": activation_url})
