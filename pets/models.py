@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import models
+from cloudinary.models import CloudinaryField  # ✅ Import CloudinaryField
 
 class Pet(models.Model):
     SIZE_CHOICES = [
@@ -97,13 +98,19 @@ class Pet(models.Model):
     #is_closed = models.BooleanField()
 
     # Add an image field for pet photos
-    image = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Attēls")
+    # image = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Attēls")
+    # extra_image_1 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 1.")
+    # extra_image_2 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 2.")
+    # extra_image_3 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 3.")
+    # extra_image_4 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 4.")
     
-    extra_image_1 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 1.")
-    extra_image_2 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 2.")
-    extra_image_3 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 3.")
-    extra_image_4 = models.ImageField(upload_to='pet_images/', blank=True, null=True, verbose_name="Papildus attēls 4.")
-
+    # ✅ Use CloudinaryField for image uploads instead of ImageField
+    image = CloudinaryField('image', blank=True, null=True)
+    extra_image_1 = CloudinaryField('image', blank=True, null=True)
+    extra_image_2 = CloudinaryField('image', blank=True, null=True)
+    extra_image_3 = CloudinaryField('image', blank=True, null=True)
+    extra_image_4 = CloudinaryField('image', blank=True, null=True)
+    
     # class Meta:
     #     verbose_name = "Pet"
     #     verbose_name_plural = "Pets"
@@ -141,7 +148,9 @@ class PetSightingHistory(models.Model):
     #is_closed = models.BooleanField()
     #comment_success_story_or_not
     # Add an image field for pet photos
-    image = models.ImageField(upload_to='sightnings_images/', blank=True, null=True, verbose_name="Attēls")
+    # image = models.ImageField(upload_to='sightnings_images/', blank=True, null=True, verbose_name="Attēls")
+    # ✅ CloudinaryField for uploaded sighting images
+    image = CloudinaryField('image', blank=True, null=True)
     #is_dead/blurred/sensitive
     STATUS_CHOICES = [
         (1, 'Pazudis'), # Lost

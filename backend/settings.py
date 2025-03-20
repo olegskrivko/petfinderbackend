@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',  # Add this line for token authentication
     'rest_framework_simplejwt',
 
+    "cloudinary",
+    "cloudinary_storage",
+
 
 
     # My apps
@@ -310,15 +313,23 @@ SIMPLE_JWT = {
 
 # Add Cloudinary settings
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+# import cloudinary
+# import cloudinary.uploader
+# import cloudinary.api
 
-cloudinary.config(
-    cloud_name=os.getenv("cloud_name"),
-    api_key=os.getenv("api_key"),
-    api_secret=os.getenv("api_secret")
-)
+# cloudinary.config(
+#     cloud_name=os.getenv("cloud_name"),
+#     api_key=os.getenv("api_key"),
+#     api_secret=os.getenv("api_secret")
+# )
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+}
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 # Configure Stripe in Django
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")

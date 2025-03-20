@@ -28,6 +28,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import BasePermission
 from decimal import Decimal
 from django.utils.timezone import now
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class PetFilter(filters.FilterSet):
     species = filters.NumberFilter(field_name='species', lookup_expr='exact')
@@ -136,6 +137,7 @@ class PetViewSet(viewsets.ModelViewSet):
     queryset = Pet.objects.all().prefetch_related('sightings_history').order_by('id')  # Optimized query to prefetch related sighting data
     serializer_class = PetSerializer
     pagination_class = PetPagination  # Set the custom pagination class here
+    parser_classes = (MultiPartParser, FormParser)  # ✅ Handle file uploads
     #permission_classes = [IsAuthenticated]  # Only authenticated users can modify pets
     #permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated]  # Restrict creation to authenticated users only
