@@ -455,6 +455,16 @@ class PetSightingCreate(APIView):
     
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_recent_pets(request):
+    """
+    Fetches the last 4 pets based on their creation date
+    """
+    # Fetch the last 4 pets ordered by the creation date
+    pets = Pet.objects.all().order_by('-created_at')[:4]
+    serializer = PetSerializer(pets, many=True)
+    return Response(serializer.data)
 
 class PetSightingHistoryViewSet(viewsets.ModelViewSet):
     queryset = PetSightingHistory.objects.all()

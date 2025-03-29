@@ -1,7 +1,7 @@
 # pets/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PetViewSet, PetSightingCreate, PetSightingHistoryViewSet, get_user_pets  # Import get_user_pets
+from .views import PetViewSet, PetSightingCreate, PetSightingHistoryViewSet,get_recent_pets, get_user_pets  # Import get_user_pets
 
 router = DefaultRouter()
 router.register(r'', PetViewSet)
@@ -15,6 +15,7 @@ urlpatterns = [
 
     path('<int:id>/pet-sightings/', PetSightingCreate.as_view(), name='create_pet_sighting'),  # New route for pet sightings
     path('pet-sightings/<int:pk>/', PetSightingHistoryViewSet.as_view({'delete': 'destroy'}), name='delete_pet_sighting'),  # DELETE pet sighting
+    path('recent-pets/', get_recent_pets, name='get_recent_pets'),
     #path('<int:pet_id>/pet-sightings/<int:sighting_id>/', PetSightingHistoryViewSet.as_view({'delete': 'destroy'}), name='delete_pet_sighting'),  # DELETE pet sighting
 ]
 
