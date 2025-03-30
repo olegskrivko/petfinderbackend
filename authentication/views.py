@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from .serializers import RegisterSerializer, LoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 User = get_user_model()
 
-EMAIL_BACKEND = os.getenv("DOMAIN_APP_URL")
+DOMAIN_APP_URL = os.getenv("DOMAIN_APP_URL")
 
 @api_view(["GET"])
 @permission_classes([AllowAny])  # ✅ Make activation public
@@ -42,7 +42,7 @@ def activate_user(request, token):
     user.save()
 
     # ✅ Redirect to React frontend login page instead of Django
-    return redirect(f"{EMAIL_BACKEND}/login")  # Change to your React frontend URL
+    return redirect(f"{DOMAIN_APP_URL}/login")  # Change to your React frontend URL
 
     #return redirect("/login")  # ✅ Redirect user to login page after activation
 # @api_view(["GET"])
@@ -150,7 +150,7 @@ def forgot_password(request):
     user.save()
 
     # ✅ Create the reset link
-    reset_url = f"{EMAIL_BACKEND}/reset-password/{user.password_reset_token}/"
+    reset_url = f"{DOMAIN_APP_URL}/reset-password/{user.password_reset_token}/"
 
     # ✅ Render HTML email template
     context = {"reset_url": reset_url, "user": user}
