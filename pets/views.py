@@ -455,16 +455,15 @@ class PetSightingCreate(APIView):
     
 
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def get_recent_pets(request):
-    """
-    Fetches the last 4 pets based on their creation date
-    """
-    # Fetch the last 4 pets ordered by the creation date
-    pets = Pet.objects.all().order_by('-created_at')[:4]
-    serializer = PetSerializer(pets, many=True)
-    return Response(serializer.data)
+class RecentPetsView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Assuming you want the most recent pets based on some ordering criteria
+            recent_pets = Pet.objects.all().order_by('-created_at')[:4]  # Adjust based on your criteria
+            serializer = PetSerializer(recent_pets, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PetSightingHistoryViewSet(viewsets.ModelViewSet):
     queryset = PetSightingHistory.objects.all()
