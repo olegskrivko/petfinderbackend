@@ -92,6 +92,9 @@ class CustomUser(AbstractUser):
     is_active = models.BooleanField(default=False)  # Prevent login until verified
     is_verified = models.BooleanField(default=False)  # Tracks if email is verified
 
+    # Field to store the animal for the avatar
+    avatar_animal = models.CharField(max_length=100, blank=True, null=True, default="Cat")  # Animal name for avatar
+
     # Email Verification
     activation_token = models.CharField(max_length=100, blank=True, null=True)
     activation_token_expires = models.DateTimeField(blank=True, null=True)

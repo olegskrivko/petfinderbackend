@@ -164,53 +164,7 @@ def forgot_password(request):
     email_message.send()
 
     return Response({"message": "Password reset email sent!"}, status=status.HTTP_200_OK)
-###### CORECT
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def forgot_password(request):
-#     """Handles password reset requests by sending an email."""
-#     email = request.data.get("email")
-    
-#     if not email:
-#         return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-#     try:
-#         user = User.objects.get(email=email)
-#     except User.DoesNotExist:
-#         return Response({"error": "No account found with this email."}, status=status.HTTP_404_NOT_FOUND)
-
-#     # ✅ Generate password reset token
-#     user.password_reset_token = str(uuid.uuid4())
-#     user.password_reset_expires = now() + timedelta(hours=1)  # Token expires in 1 hour
-#     user.save()
-
-#     # ✅ Send reset email
-#     reset_url = f"http://localhost:5173/reset-password/{user.password_reset_token}/"  # Adjust frontend URL
-#     subject = "Reset Your Password"
-#     message = f"Click the link below to reset your password:\n\n{reset_url}"
-
-#     send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
-
-#     return Response({"message": "Password reset email sent!"}, status=status.HTTP_200_OK)
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def forgot_password(request):
-#     """Handles password reset requests by sending an email."""
-#     serializer = ForgotPasswordSerializer(data=request.data)
-#     if serializer.is_valid():
-#         return Response(serializer.save(), status=status.HTTP_200_OK)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-### ✅ Reset Password View (Submit New Password)
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def reset_password(request):
-#     """Handles password reset."""
-#     serializer = ResetPasswordSerializer(data=request.data)
-#     if serializer.is_valid():
-#         return Response(serializer.save(), status=status.HTTP_200_OK)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#     return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -256,6 +210,7 @@ def login(request):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
             "username": user.username,
+            "avatar_animal": user.avatar_animal,
         }, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -269,6 +224,7 @@ def get_user_details(request):
         "id": user.id,
         "username": user.username,
         "email": user.email,
+        "avatar_animal": user.avatar_animal,
     }, status=status.HTTP_200_OK)
 
 ### ✅ Delete User View (Soft Delete Instead of Permanent Deletion)
@@ -593,3 +549,50 @@ def logout(request):
 #     user.save()
 #     return Response({"message": "User deactivated successfully"}, status=status.HTTP_204_NO_CONTENT)
 
+###### CORECT
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def forgot_password(request):
+#     """Handles password reset requests by sending an email."""
+#     email = request.data.get("email")
+    
+#     if not email:
+#         return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+#     try:
+#         user = User.objects.get(email=email)
+#     except User.DoesNotExist:
+#         return Response({"error": "No account found with this email."}, status=status.HTTP_404_NOT_FOUND)
+
+#     # ✅ Generate password reset token
+#     user.password_reset_token = str(uuid.uuid4())
+#     user.password_reset_expires = now() + timedelta(hours=1)  # Token expires in 1 hour
+#     user.save()
+
+#     # ✅ Send reset email
+#     reset_url = f"http://localhost:5173/reset-password/{user.password_reset_token}/"  # Adjust frontend URL
+#     subject = "Reset Your Password"
+#     message = f"Click the link below to reset your password:\n\n{reset_url}"
+
+#     send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
+
+#     return Response({"message": "Password reset email sent!"}, status=status.HTTP_200_OK)
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def forgot_password(request):
+#     """Handles password reset requests by sending an email."""
+#     serializer = ForgotPasswordSerializer(data=request.data)
+#     if serializer.is_valid():
+#         return Response(serializer.save(), status=status.HTTP_200_OK)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+### ✅ Reset Password View (Submit New Password)
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def reset_password(request):
+#     """Handles password reset."""
+#     serializer = ResetPasswordSerializer(data=request.data)
+#     if serializer.is_valid():
+#         return Response(serializer.save(), status=status.HTTP_200_OK)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)

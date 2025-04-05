@@ -4,7 +4,9 @@ from django.contrib.auth import get_user_model  # ✅ Get the correct user model
 User = get_user_model()  # ✅ Use CustomUser instead of auth.User
 # Adjectives & pet names for unique usernames
 ADJECTIVES = ["Happy", "Clever", "Swift", "Brave", "Loyal", "Gentle", "Curious", "Playful", "Furry", "Energetic"]
-PET_NAMES = ["Fox", "Puppy", "Kitten", "Otter", "Bunny", "Parrot", "Hound", "Whiskers", "Lion", "Dolphin"]
+PET_NAMES = ["Fox", "Dog", "Cat", "Bear", "Horse", "Alligator", "Penguin", "Pig", "Lion", "Owl"]
+
+
 
 def generate_hex_username(max_attempts=10):
     """Generate a unique pet-themed username with a 6-digit hex code."""

@@ -77,9 +77,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField(required=True)
 
+     # Adding avatar_animal to the serializer
+    avatar_animal = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = User
-        fields = ["email", "password", "username"]
+        fields = ["email", "password", "username", "avatar_animal"] # Include avatar_animal in fields
         read_only_fields = ["username"]
 
     def validate_email(self, value):
@@ -92,6 +95,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         """Create a user with a unique username and send a verification email."""
         email = validated_data["email"]
         password = validated_data["password"]
+        avatar_animal = validated_data.get("avatar_animal", "")  # Handle if avatar_animal is not provided
 
         # ✅ Generate a unique username
         username = generate_hex_username()
@@ -102,6 +106,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                     username=username,
                     email=email,
                     password=password,
+                    avatar_animal=avatar_animal,  # Save the animal for the avatar
                     is_active=False  # Prevent login until verified
                 )
                 print(f"✅ User created: {user}")  # Debugging line

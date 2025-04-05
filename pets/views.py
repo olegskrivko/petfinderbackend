@@ -104,7 +104,7 @@ class PetViewSet(viewsets.ModelViewSet):
     filterset_class = PetFilter
     pagination_class = PetPagination
     parser_classes = (MultiPartParser, FormParser)
-
+    
     def perform_create(self, serializer):
 
         uploaded_images = {}
