@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'shelters',
     'core',
     'articles',
+    'feedback',
     'user_profile',
 
 ]
