@@ -4,6 +4,7 @@ from django.utils.text import slugify
 # from django.contrib.auth.models import User
 from django.conf import settings
 from taggit.managers import TaggableManager
+from cloudinary.models import CloudinaryField  # Import CloudinaryField
 
 class Article(models.Model):
     title = models.CharField(max_length=200, unique=True)
@@ -28,7 +29,9 @@ class Article(models.Model):
 class Paragraph(models.Model):
     article = models.ForeignKey(Article, related_name="paragraphs", on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
-    image = models.ImageField(upload_to='article_images/', blank=True, null=True)
+    #image = models.ImageField(upload_to='article_images/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True)  # Use CloudinaryField for image storage
+
     text = models.TextField()
     order = models.IntegerField(default=0)
     image_prompt = models.TextField()

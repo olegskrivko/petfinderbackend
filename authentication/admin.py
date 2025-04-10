@@ -1,22 +1,26 @@
+# admin.py
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser
 
-# Register your models here.
-# from django.contrib import admin
-# from django.contrib.auth.admin import UserAdmin
-# from django.contrib.auth.models import User
-# from user_profile.models import UserProfile
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
+    list_display = ['email', 'username', 'is_active', 'is_staff', 'is_superuser']
+    list_filter = ['is_active', 'is_staff', 'is_superuser']
+    search_fields = ['email', 'username']
+    ordering = ['email']
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {'fields': ('username', 'avatar_animal')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'password1', 'password2', 'username', 'avatar_animal', 'is_staff', 'is_superuser')
+        }),
+    )
 
-# # Define an inline admin for UserProfile
-# class UserProfileInline(admin.StackedInline):
-#     model = UserProfile
-#     can_delete = False
-#     verbose_name_plural = "User Profile"
-#     fields = ('language',)  # Display language field
-
-# # Extend UserAdmin to include UserProfile
-# class CustomUserAdmin(UserAdmin):
-#     inlines = (UserProfileInline,)
-
-# # Unregister default User admin and register the new one
-# admin.site.unregister(User)
-# admin.site.register(User, CustomUserAdmin)
+# Register the CustomUser model with the admin
+admin.site.register(CustomUser, CustomUserAdmin)
