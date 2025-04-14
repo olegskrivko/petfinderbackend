@@ -26,8 +26,10 @@ urlpatterns = [
     path('api/user-profile/', include('user_profile.urls')),  # Link the user_profile app's URLs here
     path('api/shelters/', include('shelters.urls')), # Include the shelters app's URLs
     path('api/articles/', include('articles.urls')),  # API routes for articles
+    path('api/services/', include('services.urls')),  # API routes for services
     path("api/feedback/", include("feedback.urls")),
     path("api/payments/", include("payments.urls")),
+    path('api/notifications/', include('notifications.urls')),  # Notifications routes for push subscriptions
     path('api/', include('articles.urls')),  # Include the articles app's URLs under 'api/'
 ]
 

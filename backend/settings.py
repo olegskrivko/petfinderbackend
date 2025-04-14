@@ -15,6 +15,10 @@ import os
 from datetime import timedelta
 import dj_database_url
 from dotenv import load_dotenv
+# Add Cloudinary settings
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 load_dotenv()  # Load environment variables from .env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -52,14 +56,16 @@ INSTALLED_APPS = [
 
     "cloudinary",
     "cloudinary_storage",
-
+    'webpush',
 
 
     # My apps
     'authentication',  # Your authentication app
     'payments',
+    'notifications',
     'pets',  
     'shelters',
+    'services',
     'core',
     'articles',
     'feedback',
@@ -217,12 +223,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #         'rest_framework_simplejwt.authentication.JWTAuthentication',
 #     ],
 # }
+
+# Allow all origins to make cross-origin requests
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Specify allowed origins for cross-origin requests
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3000",  # React app running on this port in dev
 #     "http://yourfrontenddomain.com",  # Add your production frontend domain here
 # ]
+
+# Allow credentials (cookies, HTTP authentication) to be included in CORS requests
 CORS_ALLOW_CREDENTIALS = True
+
+# Define allowed HTTP methods for cross-origin requests
 CORS_ALLOW_METHODS = [
     'GET',
     'POST',
@@ -231,10 +245,18 @@ CORS_ALLOW_METHODS = [
     'PATCH',
     'DELETE',
 ]
+
+# Define allowed headers for cross-origin requests
 CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
     'x-csrftoken',
+]
+
+# Define which headers should be exposed to the browser
+CORS_EXPOSE_HEADERS = [
+    'Authorization',
+    'X-CSRFTOKEN',
 ]
 
 MEDIA_URL = '/media/'
@@ -301,7 +323,7 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
-
+# Set the custom user model for authentication
 AUTH_USER_MODEL = "authentication.CustomUser"
 
 # Simple JWT settings (you can adjust the time for token expiration)
@@ -324,27 +346,19 @@ SIMPLE_JWT = {
 #     SESSION_COOKIE_SECURE = True
 #     CSRF_COOKIE_SECURE = True
 
-# Add Cloudinary settings
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
+# Configure Cloudinary with credentials from environment variables
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
-# CLOUDINARY_STORAGE = {
-#     "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-#     "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-#     "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-# }
-
+# Set the default file storage to use Cloudinary for media files
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
-# Configure Stripe in Django
+# Retrieve Stripe keys and webhook secret from environment variables
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
@@ -352,3 +366,10 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # Debugging: Print to ensure it's loaded (Remove in production)
 # print("STRIPE_SECRET_KEY:", STRIPE_SECRET_KEY)
 # print(os.getenv("STRIPE_SECRET_KEY"))
+
+
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": os.getenv("VAPID_PUBLIC_KEY"),
+    "VAPID_PRIVATE_KEY": os.getenv("VAPID_PRIVATE_KEY"),
+    "VAPID_ADMIN_EMAIL": os.getenv("VAPID_ADMIN_EMAIL"),
+}

@@ -33,32 +33,66 @@ import cloudinary.uploader
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django_filters import DateFilter
+
 User = get_user_model()
 
 class PetFilter(filters.FilterSet):
     status = filters.NumberFilter(field_name='status', lookup_expr='exact')
-    species = filters.NumberFilter(field_name='species', lookup_expr='exact')
-    age = filters.NumberFilter(field_name='age', lookup_expr='exact')  # Filter for age (exact match)
-    gender = filters.NumberFilter(field_name='gender', lookup_expr='exact')  # Filter for gender
-    size = filters.NumberFilter(field_name='size', lookup_expr='exact')  # Filter for size
-    pattern = filters.NumberFilter(field_name='pattern', lookup_expr='exact')  # Filter for size
-    date = filters.IsoDateTimeFilter(field_name='event_occurred_at', lookup_expr='gte', label="Filter by Event Date")
-
-    # Allow searching on name and notes
-    search_fields = ['name', 'notes']  # Fields you want to allow search on
-
+    species = filters.NumberFilter(field_name='species', lookup_expr='exact') 
+    age = filters.NumberFilter(field_name='age', lookup_expr='exact')
+    gender = filters.NumberFilter(field_name='gender', lookup_expr='exact')
+    size = filters.NumberFilter(field_name='size', lookup_expr='exact')
+    pattern = filters.NumberFilter(field_name='pattern', lookup_expr='exact')
+    date = DateFilter(field_name='event_occurred_at', lookup_expr='gte')
     color = filters.NumberFilter(method='filter_by_color')
-
+    search = filters.CharFilter(method='filter_by_search', label='Search')
+    
     def filter_by_color(self, queryset, name, value):
-        # Filter pets by either primary_color or secondary_color matching the selected color
+        """ Filter pets by either primary_color or secondary_color matching the selected color """
         return queryset.filter(
             Q(primary_color=value) | Q(secondary_color=value)
         )
     
+    def filter_by_search(self, queryset, name, value):
+        """Split the search string into separate terms. Allow searching on name and notes"""
+        terms = value.strip().split()
+        for term in terms:
+            queryset = queryset.filter(
+                Q(notes__icontains=term) | Q(identifier__icontains=term)
+            )
+        return queryset
     
     class Meta:
         model = Pet
-        fields = ['species', 'age', 'gender', 'size', 'status', 'pattern', 'color']
+        fields = ['search', 'species', 'age', 'gender', 'size', 'status', 'pattern', 'date', 'color']
+
+
+# class PetFilter(filters.FilterSet):
+#     status = filters.NumberFilter(field_name='status', lookup_expr='exact')
+#     species = filters.NumberFilter(field_name='species', lookup_expr='exact')
+#     age = filters.NumberFilter(field_name='age', lookup_expr='exact')  # Filter for age (exact match)
+#     gender = filters.NumberFilter(field_name='gender', lookup_expr='exact')  # Filter for gender
+#     size = filters.NumberFilter(field_name='size', lookup_expr='exact')  # Filter for size
+#     pattern = filters.NumberFilter(field_name='pattern', lookup_expr='exact')  # Filter for size
+#     date = filters.IsoDateTimeFilter(field_name='event_occurred_at', lookup_expr='gte', label="Filter by Event Date")
+
+#     # Allow searching on name and notes
+#     search_fields = ['name', 'notes']  # Fields you want to allow search on
+
+#     color = filters.NumberFilter(method='filter_by_color')
+
+#     def filter_by_color(self, queryset, name, value):
+#         # Filter pets by either primary_color or secondary_color matching the selected color
+#         return queryset.filter(
+#             Q(primary_color=value) | Q(secondary_color=value)
+#         )
+    
+    
+#     class Meta:
+#         model = Pet
+#         fields = ['species', 'age', 'gender', 'size', 'status', 'pattern', 'color']
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Ensure only authenticated users can access
@@ -73,15 +107,7 @@ def get_user_pets(request):
     serializer = PetSerializer(pets, many=True)
     return Response(serializer.data)
 
-# ✅ Custom permission: Only pet owners can edit/delete
-class IsOwnerOrReadOnly(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        # Read-only permissions for everyone
-        if request.method in ['GET', 'HEAD', 'OPTIONS']:
-            return True
-        # Write permissions only for the pet owner
-        return obj.author == request.user
-# Custom pagination class to include metadata in the response
+
 class PetPagination(PageNumberPagination):
     page_size = 6  # Default page size
     page_size_query_param = 'page_size'  # Allow clients to set the page size
@@ -95,15 +121,52 @@ class PetPagination(PageNumberPagination):
             'results': data  # The paginated results
         })
 
+    
 class PetViewSet(viewsets.ModelViewSet):
-    print("i am in petviewset")
-    queryset = Pet.objects.all().order_by('id')  # Adjust query if no longer using PetSightingHistory
+    queryset = Pet.objects.all().order_by('-created_at')  # Order by created_at in descending order (most recent first)
     serializer_class = PetSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Allow public read access, but auth required for write operations
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_class = PetFilter
     pagination_class = PetPagination
+    # filterset_fields = {
+    #     'species': ['in', 'exact'],  # Filter by species (multiple species allowed)
+    #     'breed': ['exact'],          # You can filter by breed if needed
+    #     'age': ['exact', 'gte', 'lte'],  # Filter by age (exact, greater than, or less than)
+    # }
     parser_classes = (MultiPartParser, FormParser)
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Optional: you can still customize filtering behavior if needed here, but filterset_class should handle most cases
+        return queryset
+
+       # Optionally, you can override the get_queryset method if needed
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+
+    #     species = self.request.query_params.get('species', None)
+    #     gender = self.request.query_params.get('gender', None)
+
+    #     if species:
+    #         try:
+    #             species_ids = [int(s) for s in species.split(',')]
+    #             queryset = queryset.filter(species__in=species_ids)
+    #         except ValueError as e:
+    #             return Response({"error": "Invalid species parameter. Must be integers."}, status=400)
+
+    #     if gender:
+    #         try:
+    #             genders_ids = [int(g) for g in gender.split(',')]
+    #             queryset = queryset.filter(gender__in=genders_ids)
+    #         except ValueError as e:
+    #             return Response({"error": "Invalid gender parameter. Must be integers."}, status=400)
+
+    #     return queryset
+    
+    def list(self, request, *args, **kwargs):
+        # The pagination logic is handled automatically by the pagination class
+        return super().list(request, *args, **kwargs)
     
     def perform_create(self, serializer):
 
@@ -196,282 +259,8 @@ class PetViewSet(viewsets.ModelViewSet):
         pet = get_object_or_404(Pet, pk=pk, author=request.user)
         pet.delete()
         return Response({"message": "Pet deleted successfully."}, status=204)
-# class PetSightingCreate(APIView):
-#     """Handles creating a pet sighting entry"""
-
-#     def post(self, request, id):
-#         # ✅ Find the pet by ID or return 404
-#         pet = get_object_or_404(Pet, id=id)
-
-#         # ✅ Extract data from request
-#         status_value = request.data.get('status')
-#         latitude = request.data.get('latitude')
-#         longitude = request.data.get('longitude')
-#         notes = request.data.get('notes', '')
-#         reporter = request.user  # ✅ Ensure it's linked to the authenticated user
-
-#         # ✅ Get and process date/time
-#         date = request.data.get("date")  # e.g., "2025-04-01"
-#         time = request.data.get("time")  # e.g., "14:30"
-
-#         if date and time:
-#             try:
-#                 combined_datetime_str = f"{date} {time}"
-#                 event_occurred_at = datetime.strptime(combined_datetime_str, "%Y-%m-%d %H:%M")
-#                 event_occurred_at = make_aware(event_occurred_at)  # Convert to timezone-aware
-#             except ValueError:
-#                 return Response({"error": "Invalid date or time format"}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             event_occurred_at = timezone.now()  # Default to now if missing
-
-#         # ✅ Validate `status`
-#         try:
-#             status_value = int(status_value)
-#             if status_value not in dict(PetSightingHistory.STATUS_CHOICES):
-#                 return Response({"error": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-#         except (ValueError, TypeError):
-#             return Response({"error": "Invalid status format"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # ✅ Validate & convert latitude/longitude
-#         if latitude and longitude:
-#             try:
-#                 latitude = Decimal(latitude)
-#                 longitude = Decimal(longitude)
-#             except (InvalidOperation, ValueError):
-#                 return Response({"error": "Invalid latitude or longitude format"}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             return Response({"error": "Latitude and longitude are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # ✅ Handle image upload (if provided)
-#         image_url = None
-#         image = request.FILES.get('image')
-#         print("imagexxx", image)
-#         if image:
-#             uploaded_image = cloudinary.uploader.upload(image)
-#             image_url = uploaded_image.get("secure_url")
-
-#         # ✅ Save the pet sighting in the database
-#         sighting = PetSightingHistory.objects.create(
-#             pet=pet,
-#             status=status_value,
-#             latitude=latitude,
-#             longitude=longitude,
-#             event_occurred_at=event_occurred_at,
-#             notes=notes,
-#             reporter=reporter,
-#             pet_image=image_url  # ✅ Store uploaded image URL
-#         )
-
-#         # ✅ Return success response
-#         return Response({
-#             "id": sighting.id,
-#             "pet": sighting.pet.id,
-#             "status": sighting.get_status_display(),
-#             "latitude": sighting.latitude,
-#             "longitude": sighting.longitude,
-#             "event_occurred_at": sighting.event_occurred_at,
-#             "notes": sighting.notes,
-#             "image": sighting.pet_image,
-#             "reporter": sighting.reporter.id,
-#         }, status=status.HTTP_201_CREATED)
-# class PetSightingCreate(APIView):
-#     parser_classes = (MultiPartParser, FormParser)  # ✅ Allow image uploads
-#     def post(self, request, id):
-#         """Handles pet sighting creation"""
-        
-#         # Find pet by ID or return 404
-#         pet = get_object_or_404(Pet, id=id)
-
-#         # Extract data from request
-#         status_value = request.data.get('status')
-#         latitude = request.data.get('latitude')
-#         longitude = request.data.get('longitude')
-#         date = request.data.get('date')  # e.g., "2025-04-01"
-#         time = request.data.get('time')  # e.g., "14:30"
-#         notes = request.data.get('notes', '')
-#         image = request.FILES.get('image')  # ✅ Fix: Handle image uploads
-
-#         # Validate `status`
-#         try:
-#             status_value = int(status_value)
-#             if status_value not in dict(PetSightingHistory.STATUS_CHOICES):
-#                 return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
-#         except (ValueError, TypeError):
-#             return Response({"error": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # ✅ Validate `latitude` and `longitude`
-#         if not latitude or not longitude:
-#             return Response({"error": "Latitude and longitude are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             latitude = Decimal(latitude)
-#             longitude = Decimal(longitude)
-#         except (InvalidOperation, ValueError):
-#             return Response({"error": "Invalid latitude or longitude format"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # ✅ Combine `date` and `time` into `event_occurred_at`
-#         if date and time:
-#             try:
-#                 combined_datetime_str = f"{date} {time}"
-#                 event_occurred_at = datetime.strptime(combined_datetime_str, "%Y-%m-%d %H:%M")
-#                 event_occurred_at = make_aware(event_occurred_at)
-#             except ValueError:
-#                 return Response({"error": "Invalid date or time format"}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             event_occurred_at = timezone.now()  # Default to current time if missing
-
-#        # ✅ Upload image to Cloudinary (if provided)
-#         uploaded_image_url = None
-#         if image:
-#             try:
-#                 uploaded_image = cloudinary.uploader.upload(image)
-#                 uploaded_image_url = uploaded_image.get("secure_url")
-#             except Exception as e:
-#                 return Response({"error": f"Image upload failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-#         # ✅ Create the PetSightingHistory entry
-#         sighting = PetSightingHistory.objects.create(
-#             pet=pet,
-#             status=status_value,
-#             latitude=latitude,
-#             longitude=longitude,
-#             event_occurred_at=event_occurred_at,
-#             notes=notes,
-#             reporter=request.user,  # ✅ Always use `request.user`
-#             image=uploaded_image_url  # ✅ Save Cloudinary image URL
-#         )
-
-#         # ✅ Return success response
-#         return Response({
-#             "id": sighting.id,
-#             "pet": sighting.pet.id,
-#             "status": sighting.get_status_display(),
-#             "latitude": sighting.latitude,
-#             "longitude": sighting.longitude,
-#             "event_occurred_at": sighting.event_occurred_at,
-#             "notes": sighting.notes,
-#             "reporter": sighting.reporter.id,
-#             "image_url": uploaded_image_url  # ✅ Include image URL in response
-#         }, status=status.HTTP_201_CREATED)
-# class PetSightingView(APIView):
-#     """Handles creating pet sighting entry (POST) and listing pet sighting entries (GET)"""
-
-#     def get(self, request, id):
-#         # List pet sightings for a specific pet
-#         pet = get_object_or_404(Pet, id=id)
-#         sightings = PetSightingHistory.objects.filter(pet=pet)
-#         serializer = PetSightingHistorySerializer(sightings, many=True)
-#         return Response(serializer.data)
-
-#     def post(self, request, id):
-#         # Create a new pet sighting entry
-#         pet = get_object_or_404(Pet, id=id)
-
-#         status_value = request.data.get('status')
-#         latitude = request.data.get('latitude')
-#         longitude = request.data.get('longitude')
-#         notes = request.data.get('notes', '')
-#         reporter = request.user
-
-#         # Get and process date/time
-#         date = request.data.get("date")  # e.g., "2025-04-01"
-#         time = request.data.get("time")  # e.g., "14:30"
-
-#         if date and time:
-#             try:
-#                 combined_datetime_str = f"{date} {time}"
-#                 event_occurred_at = datetime.strptime(combined_datetime_str, "%Y-%m-%d %H:%M")
-#                 event_occurred_at = make_aware(event_occurred_at)  # Convert to timezone-aware
-#             except ValueError:
-#                 return Response({"error": "Invalid date or time format"}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             event_occurred_at = timezone.now()  # Default to now if missing
-
-#         # Validate `status`
-#         try:
-#             status_value = int(status_value)
-#             if status_value not in dict(PetSightingHistory.STATUS_CHOICES):
-#                 return Response({"error": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-#         except (ValueError, TypeError):
-#             return Response({"error": "Invalid status format"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Validate latitude/longitude
-#         if latitude and longitude:
-#             try:
-#                 latitude = Decimal(latitude)
-#                 longitude = Decimal(longitude)
-#             except (InvalidOperation, ValueError):
-#                 return Response({"error": "Invalid latitude or longitude format"}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             return Response({"error": "Latitude and longitude are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Handle image upload (if provided)
-#         image_url = None
-#         image = request.FILES.get('image')
-#         if image:
-#             uploaded_image = cloudinary.uploader.upload(image)
-#             image_url = uploaded_image.get("secure_url")
-
-#         # Save the pet sighting in the database
-#         sighting = PetSightingHistory.objects.create(
-#             pet=pet,
-#             status=status_value,
-#             latitude=latitude,
-#             longitude=longitude,
-#             event_occurred_at=event_occurred_at,
-#             notes=notes,
-#             reporter=reporter,
-#             pet_image=image_url
-#         )
-
-#         # Return success response
-#         return Response({
-#             "id": sighting.id,
-#             "pet": sighting.pet.id,
-#             "status": sighting.get_status_display(),
-#             "latitude": sighting.latitude,
-#             "longitude": sighting.longitude,
-#             "event_occurred_at": sighting.event_occurred_at,
-#             "notes": sighting.notes,
-#             "image": sighting.pet_image,
-#             "reporter": sighting.reporter.id,
-#         }, status=status.HTTP_201_CREATED)  
 
 
-# class PetSightingHistoryViewSet(viewsets.ModelViewSet):
-#     queryset = PetSightingHistory.objects.all()
-#     serializer_class = PetSightingHistorySerializer
-#     permission_classes = [IsAuthenticated]  # Ensure only logged-in users can add sightings
-
-#     def destroy(self, request, *args, **kwargs):
-#         sighting_id = kwargs.get('pk')  # Use 'pk' instead of 'sighting_id'
-#         try:
-#             sighting = PetSightingHistory.objects.get(id=sighting_id)
-            
-#             # Restrict deletion to the user who reported the sighting
-#             if sighting.reporter != request.user:
-#                 return Response(
-#                     {"error": "You are not authorized to delete this sighting"},
-#                     status=status.HTTP_403_FORBIDDEN
-#                 )
-
-#             # If authorized, proceed with deletion
-#             self.perform_destroy(sighting)
-#             return Response(
-#                 {"message": "Pet sighting deleted successfully"},
-#                 status=status.HTTP_204_NO_CONTENT
-#             )
-
-#         except PetSightingHistory.DoesNotExist:
-#             return Response(
-#                 {"error": "Pet sighting not found"},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
-
-#     def perform_create(self, serializer):
-#             """ ✅ Ensure that the logged-in user is set as the reporter """
-#             print("self.request.user", self.request.user)
-#             serializer.save(reporter=self.request.user)
 class PetSightingView(APIView):
     """Handles creating pet sighting entry (POST), listing pet sightings (GET), and deleting a sighting (DELETE)"""
 
@@ -575,18 +364,7 @@ class PetSightingView(APIView):
         sighting.delete()
 
         return Response({"message": "Pet sighting deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    # def delete(self, request, id, sighting_id):
-    #     # Delete a pet sighting entry
-    #     pet = get_object_or_404(Pet, id=id)
-    #     sighting = get_object_or_404(PetSightingHistory, id=sighting_id, pet=pet)
 
-    #     # Ensure that only the user who reported the sighting can delete it
-    #     if sighting.reporter != request.user:
-    #         raise PermissionDenied("You are not authorized to delete this sighting.")
-
-    #     # Perform the deletion
-    #     sighting.delete()
-    #     return Response({"message": "Pet sighting deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     
 class RecentPetsView(APIView):
     def get(self, request, *args, **kwargs):
@@ -597,24 +375,3 @@ class RecentPetsView(APIView):
             return Response(serializer.data)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-# Method	Endpoint	Purpose	Status
-# GET	/api/pets/	List all pets	✅ Works?
-# POST	/api/pets/	Create a new pet	✅ Works?
-# GET	/api/pets/1/	Get details of pet ID=1	✅ Works?
-# PUT/PATCH	/api/pets/1/	Edit pet ID=1	✅ Works?
-# DELETE	/api/pets/1/	Delete pet ID=1	✅ Works?
-# GET	/api/user-pets/	Get user’s pets	✅ Works?
-# POST	/api/pets/1/pet-sightings/	Create pet sighting	✅ Works?
-# GET	/api/pets/1/pet-sightings/	Get all sightings for pet ID=1	✅ Works?
-# POST	/api/user-profile/favorite-pets/1/	Add pet ID=1 to favorites	✅ Works?
-# DELETE	/api/user-profile/favorite-pets/1/remove/	Remove pet ID=1 from favorites	✅ Works?
-
-
-# ✔ list – Get all pets (with filters & pagination)
-# ✔ retrieve – Get a specific pet
-# ✔ create – Add a new pet
-# ✔ update – Edit a pet (with PATCH support)
-# ✔ destroy – Delete a pet
-# ✔ get_user_pets – Get pets created by the logged-in user
-# ✔ filtering & searching – By species, age, gender, color, etc.
-# ✔ sighting history – Creating and managing pet sightings

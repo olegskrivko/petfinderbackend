@@ -95,13 +95,15 @@ class CustomUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-
+    
     def create_superuser(self, email, password=None, **extra_fields):
         """
         Creates and returns a superuser with an email and password.
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_verified', True)  # Automatically verify superuser
+        extra_fields.setdefault('is_active', True)    # Automatically activate superuser
 
         # Automatically generate a username if not provided
         if not extra_fields.get('username'):
@@ -157,6 +159,7 @@ class CustomUser(AbstractUser):
                 self.username = f"user_{uuid.uuid4().hex[:8]}"
 
         super().save(*args, **kwargs)
+        
 
     def generate_unique_username(self):
         """Generate a random, unique username."""
