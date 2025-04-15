@@ -29,7 +29,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ziņa nedrīkst būt tukša.")
         if len(value) > 500:
             raise serializers.ValidationError("Ziņa nedrīkst pārsniegt 500 rakstzīmes.")
-        if len(value) < 10:
+        if len(value) < 3:
             raise serializers.ValidationError("Ziņa ir pārāk īsa.")
         return value
 
