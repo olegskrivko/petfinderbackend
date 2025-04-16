@@ -1,20 +1,31 @@
 
-
 from django.contrib import admin
-from .models import Service, Location
+from .models import Service, Location, WorkingHour
 
-# Define an inline for locations to be displayed within a Service entry
+# Inline for WorkingHour inside Location
+class WorkingHourInline(admin.TabularInline):
+    model = WorkingHour
+    extra = 1
+
+# Inline for Location inside Service
 class LocationInline(admin.TabularInline):
     model = Location
-    extra = 1  # Add extra empty form to add new locations directly from the service page
+    extra = 1
+    show_change_link = True  # Enables "Edit" link to access Location admin
 
-# Define the ServiceAdmin to customize how the Service model is displayed
+# Admin for Service with Location inlines
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'price', 'created_at')  # Columns to display in the list view
-    search_fields = ('title', 'category')  # Add search functionality
-    list_filter = ('category',)  # Add a filter for categories in the sidebar
-    inlines = [LocationInline]  # Show locations inline within the Service admin page
+    list_display = ('title', 'category', 'price', 'created_at')
+    search_fields = ('title',)
+    list_filter = ('category',)
+    inlines = [LocationInline]
 
-# Register the models in the admin panel
+# Admin for Location with WorkingHour inlines
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ('service', 'city', 'price')
+    inlines = [WorkingHourInline]
+
+# Register everything
 admin.site.register(Service, ServiceAdmin)
-admin.site.register(Location)
+admin.site.register(Location, LocationAdmin)
+admin.site.register(WorkingHour)

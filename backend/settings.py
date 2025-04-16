@@ -373,3 +373,32 @@ WEBPUSH_SETTINGS = {
     "VAPID_PRIVATE_KEY": os.getenv("VAPID_PRIVATE_KEY"),
     "VAPID_ADMIN_EMAIL": os.getenv("VAPID_ADMIN_EMAIL"),
 }
+
+
+"""
+Steps to fully reset your Django DB (PostgreSQL)
+
+1. Delete the database
+If you're using PostgreSQL on a platform like Render or locally:
+Drop the database manually (via GUI like pgAdmin or DROP DATABASE in SQL)
+Or delete the Postgres instance (if you're on Render or another host)
+
+2. Delete migration files
+Run this in your terminal from your project root:
+find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+find . -path "*/migrations/*.pyc"  -delete
+Or manually delete all files inside each app's migrations/ folder except __init__.py.
+
+3. Clear compiled Python files (optional but good to do)
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -delete
+
+4. Make new migrations
+python manage.py makemigrations
+
+5. Apply the migrations to a fresh DB
+python manage.py migrate
+
+6. (Optional) Create a superuser again
+python manage.py createsuperuser
+"""
