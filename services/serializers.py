@@ -11,10 +11,13 @@ class WorkingHourSerializer(serializers.ModelSerializer):
 
 class LocationSerializer(serializers.ModelSerializer):
     working_hours = WorkingHourSerializer(many=True, read_only=True)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
 
     class Meta:
         model = Location
-        fields = ['id', 'city', 'address', 'phone_number', 'email', 'working_hours']
+        fields = '__all__' 
+        # fields = ['id', 'city', 'address', 'phone_number', 'email', 'working_hours']
 
 class ServiceSerializer(serializers.ModelSerializer):
     locations = LocationSerializer(many=True)
