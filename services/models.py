@@ -3,7 +3,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models import Avg
-from .models import SocialMedia
+# from .models import SocialMedia
 
 User = get_user_model()
     
@@ -51,7 +51,7 @@ class Service(models.Model):
     #review_count = models.PositiveIntegerField(default=0)  # To show how many reviews
     #language = models.CharField(max_length=10, default='lv')  # If you plan for multilingual
     website = models.URLField(blank=True, null=True, verbose_name="Vietne")
-    social_media = models.ManyToManyField(SocialMedia, blank=True, related_name='shelters', verbose_name="Sociālie mediji")
+    # social_media = models.ManyToManyField(SocialMedia, blank=True, related_name='shelters', verbose_name="Sociālie mediji")
 
     def get_average_rating(self):
         # Calculate the average rating for this service
