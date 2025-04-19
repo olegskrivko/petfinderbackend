@@ -15,14 +15,14 @@ class LocationInline(admin.TabularInline):
 
 # Admin for Service with Location inlines
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'price', 'created_at')
+    list_display = ('title', 'category', 'created_at')
     search_fields = ('title',)
     list_filter = ('category',)
     inlines = [LocationInline]
 
 # Admin for Location with WorkingHour inlines
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('service', 'city', 'price')
+    list_display = ('service', 'city',)
     inlines = [WorkingHourInline]
 
 # Register everything

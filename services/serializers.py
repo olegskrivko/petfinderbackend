@@ -1,6 +1,6 @@
 # services/serializers.py
 from rest_framework import serializers
-from .models import Service, Location, WorkingHour
+from .models import Service, Location, WorkingHour, Review, SocialMedia
 
 class WorkingHourSerializer(serializers.ModelSerializer):
     day_display = serializers.CharField(source='get_day_display')
@@ -19,10 +19,21 @@ class LocationSerializer(serializers.ModelSerializer):
         fields = '__all__' 
         # fields = ['id', 'city', 'address', 'phone_number', 'email', 'working_hours']
 
+class SocialMediaSerializer(serializers.ModelSerializer):
+    platform = serializers.CharField(source='get_platform_display', read_only=True)
+    class Meta:
+        model = SocialMedia
+        fields = ['platform', 'profile_url']
+
 class ServiceSerializer(serializers.ModelSerializer):
     locations = LocationSerializer(many=True)
     user = serializers.ReadOnlyField(source='user.username')  # Optional: Display username
     category_display = serializers.CharField(source='get_category_display', read_only=True)  # 👈 Add this
+    provider_type_display = serializers.CharField(source='get_provider_type_display', read_only=True)
+    average_rating = serializers.FloatField(source='get_average_rating', read_only=True)
+    social_media = SocialMediaSerializer(many=True, read_only=True)
+    # tags = serializers.CharField(source='get_tags_display', read_only=True)
+    # reviews = ReviewSerializer(many=True, read_only=True)  # Uncomment if you want reviews in the service detail
 
     class Meta:
         model = Service
@@ -52,3 +63,13 @@ class ServiceSerializer(serializers.ModelSerializer):
                 Location.objects.create(service=instance, **location_data)
 
         return instance
+    
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'rating', 'comment', 'created_at']
+

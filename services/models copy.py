@@ -2,11 +2,10 @@
 # services/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
-from core.models import SocialMedia
 from django.db.models import Avg
 # from cloudinary.models import CloudinaryField 
 # from .models import SocialMedia
-from taggit.managers import TaggableManager
+
 User = get_user_model()
     
 class Service(models.Model):
@@ -31,11 +30,6 @@ class Service(models.Model):
         (1, 'Fiziska persona'),    # Physical Person
         (2, 'Juridiska persona'),  # Legal Entity (Company)
     ]
-    PHONE_CODE_CHOICES = [
-        ('+371', 'Latvija (+371)'),
-        ('+370', 'Lietuva (+370)'),
-        ('+372', 'Igaunija (+372)'),
-    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='services')
     title = models.CharField(max_length=100)
     description = models.TextField()
@@ -58,27 +52,7 @@ class Service(models.Model):
     #review_count = models.PositiveIntegerField(default=0)  # To show how many reviews
     #language = models.CharField(max_length=10, default='lv')  # If you plan for multilingual
     website = models.URLField(blank=True, null=True, verbose_name="Vietne")
-    social_media = models.ManyToManyField(SocialMedia, blank=True, related_name='services', verbose_name="Sociālie mediji")
     # social_media = models.ManyToManyField(SocialMedia, blank=True, related_name='shelters', verbose_name="Sociālie mediji")
-    # isOnline = models.BooleanField(default=False)
-    phone_number = models.CharField(max_length=15, blank=True, null=True, verbose_name="Telefona numurs")
-    phone_code = models.CharField(max_length=5, null=True, blank=True, choices=PHONE_CODE_CHOICES, verbose_name="Telefona kods")
-    email = models.EmailField(blank=True, null=True, verbose_name="E-pasts")
-    tags = TaggableManager()
-
-
-    # @property
-    # def location(self):
-    #     """
-    #     Shortcut to get the primary (first) location for this service.
-    #     If you have just one location per service,
-    #     this makes your code more concise.
-    #     """
-    #     return self.locations.first()
-
-    # def __str__(self):
-    #     return self.title
-
 
     def get_average_rating(self):
         # Calculate the average rating for this service
@@ -112,7 +86,7 @@ class Location(models.Model):
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True, verbose_name="Valsts")
 
 
-    # location_title = models.CharField(max_length=100)
+
     region = models.CharField(max_length=100, blank=True, null=True, verbose_name="Reģions")  # State/Province
     city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Pilsēta")
     street = models.CharField(max_length=200, blank=True, null=True, verbose_name="Iela")
@@ -127,7 +101,6 @@ class Location(models.Model):
     phone_number = models.CharField(max_length=15, blank=True, null=True, verbose_name="Telefona numurs")
     phone_code = models.CharField(max_length=5, null=True, blank=True, choices=PHONE_CODE_CHOICES, verbose_name="Telefona kods")
     email = models.EmailField(blank=True, null=True, verbose_name="E-pasts")
-    
 
     def formatted_phone_code(self):
         return f"+{self.phone_code}" if self.phone_code else ""
