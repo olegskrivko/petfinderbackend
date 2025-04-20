@@ -30,6 +30,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')  # Optional: Display username
     category_display = serializers.CharField(source='get_category_display', read_only=True)  # 👈 Add this
     provider_type_display = serializers.CharField(source='get_provider_type_display', read_only=True)
+    price_type_display = serializers.CharField(source='get_price_type_display', read_only=True)
     average_rating = serializers.FloatField(source='get_average_rating', read_only=True)
     social_media = SocialMediaSerializer(many=True, read_only=True)
     # tags = serializers.CharField(source='get_tags_display', read_only=True)

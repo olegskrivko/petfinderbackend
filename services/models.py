@@ -36,10 +36,25 @@ class Service(models.Model):
         ('+370', 'Lietuva (+370)'),
         ('+372', 'Igaunija (+372)'),
     ]
+
+    PRICE_TYPE_CHOICES = [
+        (1, 'Stundā'),
+        (2, 'Vienībā'),
+        (3, 'Dienā'),
+        (4, 'Pēc vienošanās'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='services')
     title = models.CharField(max_length=100)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    price_type = models.IntegerField(choices=PRICE_TYPE_CHOICES, default=1)
+
+    # price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
+    # price_min = models.DecimalField(max_digits=10, decimal_places=2)  # Min price for different service packages
+    # price_max = models.DecimalField(max_digits=10, decimal_places=2)  # Max price for different service packages
+    # duration = models.DurationField(null=True, blank=True)  # For fixed service durations (e.g. 1h walk)
+    
     category = models.IntegerField(choices=SERVICE_CATEGORIES)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -49,12 +64,10 @@ class Service(models.Model):
     provider_type = models.IntegerField(choices=PROVIDER_TYPES)
     service_image = models.URLField(max_length=255, null=False, blank=False, verbose_name="Servisa attēls")
     # service_image = CloudinaryField('image', blank=True, null=True)
-    duration = models.DurationField(null=True, blank=True)  # For fixed service durations (e.g. 1h walk)
+
     #tags = models.CharField(max_length=255, blank=True)  # Comma-separated or for future tagging logic
     #rating = models.FloatField(default=0, help_text="Average rating")  # If you plan to allow reviews
-    price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
-    price_min = models.DecimalField(max_digits=10, decimal_places=2)  # Min price for different service packages
-    price_max = models.DecimalField(max_digits=10, decimal_places=2)  # Max price for different service packages
+
     #review_count = models.PositiveIntegerField(default=0)  # To show how many reviews
     #language = models.CharField(max_length=10, default='lv')  # If you plan for multilingual
     website = models.URLField(blank=True, null=True, verbose_name="Vietne")
@@ -112,7 +125,8 @@ class Location(models.Model):
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True, verbose_name="Valsts")
 
 
-    # location_title = models.CharField(max_length=100)
+    location_title = models.CharField(max_length=100)
+    location_description = models.TextField()
     region = models.CharField(max_length=100, blank=True, null=True, verbose_name="Reģions")  # State/Province
     city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Pilsēta")
     street = models.CharField(max_length=200, blank=True, null=True, verbose_name="Iela")
