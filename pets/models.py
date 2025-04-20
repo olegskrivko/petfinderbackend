@@ -1,7 +1,8 @@
 from django.db import models
 from django.conf import settings
-from django.db import models
 from django.utils import timezone
+# from services.models import Service
+
 
 class Pet(models.Model):
     STATUS_CHOICES = [
@@ -144,3 +145,16 @@ class UserFavorites(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.pet.id}"
+
+# class UserServiceFavorites(models.Model):
+#     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_favorites")
+#     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="favorited_by")
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         constraints = [
+#             models.UniqueConstraint(fields=['user', 'service'], name='unique_user_service')
+#         ]
+
+#     def __str__(self):
+#         return f"{self.user.username} - {self.service.id}"

@@ -1,6 +1,6 @@
 
 from django.contrib import admin
-from .models import Service, Location, WorkingHour
+from .models import Service, Location, WorkingHour, Review
 
 # Inline for WorkingHour inside Location
 class WorkingHourInline(admin.TabularInline):
@@ -29,3 +29,4 @@ class LocationAdmin(admin.ModelAdmin):
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(Location, LocationAdmin)
 admin.site.register(WorkingHour)
+admin.site.register(Review)

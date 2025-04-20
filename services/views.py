@@ -3,8 +3,8 @@
 from rest_framework import serializers
 from rest_framework import viewsets, generics
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Service, WorkingHour, Location
-from .serializers import ServiceSerializer
+from .models import Service, WorkingHour, Location, Review
+from .serializers import ServiceSerializer, ReviewSerializer
 # from .filters import ServiceFilter
 # Add this at the top if you haven't already
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -12,7 +12,11 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework import generics
+from rest_framework.exceptions import ValidationError
 from django_filters import rest_framework as filters
+
+
 import django_filters
 from django.db.models import Q
 from django.contrib.auth import get_user_model
@@ -89,5 +93,48 @@ class ServiceDetailView(generics.RetrieveAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
     lookup_field = 'id'
+
+
+class ReviewListCreateView(generics.ListCreateAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        service_id = self.kwargs['service_id']
+        return Review.objects.filter(service_id=service_id)
+
+    # def perform_create(self, serializer):
+    #     user = self.request.user
+    #     service_id = self.kwargs['service_id']  # Get service_id from URL
+    #     service = Service.objects.get(id=service_id)
+        
+    #     # Try to get the existing review, if any
+    #     review, created = Review.objects.get_or_create(service=service, user=user)
+        
+    #     # If it's not a new review, update it
+    #     if not created:
+    #         review.rating = serializer.validated_data.get('rating', review.rating)
+    #         review.comment = serializer.validated_data.get('comment', review.comment)
+    #         review.save()
+    #     else:
+    #         # If it's a new review, save it
+    #         review = serializer.save(user=user, service=service)
+    def perform_create(self, serializer):
+        user = self.request.user
+        service_id = self.kwargs['service_id']
+        service = Service.objects.get(id=service_id)
+
+        # Check if the review already exists
+        existing_review = Review.objects.filter(user=user, service=service).first()
+
+        if existing_review:
+            # Update existing review with validated data
+            existing_review.rating = serializer.validated_data['rating']
+            existing_review.comment = serializer.validated_data['comment']
+            existing_review.save()
+        else:
+            # Create a new review using serializer (which already has validated data)
+            serializer.save(user=user, service=service)
+
 
 

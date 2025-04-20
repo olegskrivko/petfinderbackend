@@ -31,16 +31,27 @@ class ServiceSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)  # 👈 Add this
     provider_type_display = serializers.CharField(source='get_provider_type_display', read_only=True)
     price_type_display = serializers.CharField(source='get_price_type_display', read_only=True)
-    average_rating = serializers.FloatField(source='get_average_rating', read_only=True)
+    #average_rating = serializers.FloatField(source='get_average_rating', read_only=True)
     social_media = SocialMediaSerializer(many=True, read_only=True)
     # tags = serializers.CharField(source='get_tags_display', read_only=True)
-    # reviews = ReviewSerializer(many=True, read_only=True)  # Uncomment if you want reviews in the service detail
+
+
+    rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+
+    def get_rating(self, obj):
+        return round(obj.average_rating(), 1)  # Use the method defined in the model
+
+    def get_review_count(self, obj):
+        return obj.review_count()  # Call the review_count() method from the Service model
 
     class Meta:
         model = Service
         fields = '__all__' 
         
         # fields = ['id', 'title', 'description', 'price', 'category', 'created_at', 'user', 'locations']
+
+
 
     def create(self, validated_data):
         locations_data = validated_data.pop('locations')
@@ -67,10 +78,30 @@ class ServiceSerializer(serializers.ModelSerializer):
     
 
 
+
 class ReviewSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user_name = serializers.CharField(source='user.username', read_only=True)
+
+    def validate_rating(self, value):
+        if value is None:
+            raise serializers.ValidationError("Rating is required.")
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'rating', 'comment', 'created_at']
+        fields = ['id', 'rating', 'comment', 'created_at', 'user_name', 'user', 'service']
+        read_only_fields = ['id', 'created_at', 'user', 'service']
+
+
+        # fields = ['id', 'user_name', 'rating', 'comment', 'created_at']
+
+
+# class ReviewSerializer(serializers.ModelSerializer):
+#     user = serializers.StringRelatedField(read_only=True)
+
+#     class Meta:
+#         model = Review
+#         fields = ['id', 'user', 'rating', 'comment', 'created_at']
 

@@ -35,7 +35,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]  # Allows all hosts
-
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'yourdomain.com']
 
 # Application definition
 
@@ -225,14 +225,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # }
 
 # Allow all origins to make cross-origin requests
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True # Turn off "Allow All Origins" in production
 
 # Specify allowed origins for cross-origin requests
 # CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # React app running on this port in dev
-#     "http://yourfrontenddomain.com",  # Add your production frontend domain here
+#     "https://pawclix.netlify.app",  # Add your frontend's URL here
 # ]
-
 # Allow credentials (cookies, HTTP authentication) to be included in CORS requests
 CORS_ALLOW_CREDENTIALS = True
 
@@ -249,13 +247,13 @@ CORS_ALLOW_METHODS = [
 # Define allowed headers for cross-origin requests
 CORS_ALLOW_HEADERS = [
     'content-type',
-    'authorization',
+    'authorization', # Needed for passing JWT token in Authorization header
     'x-csrftoken',
 ]
 
 # Define which headers should be exposed to the browser
 CORS_EXPOSE_HEADERS = [
-    'Authorization',
+    'Authorization', # Expose Authorization header if needed
     'X-CSRFTOKEN',
 ]
 

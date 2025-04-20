@@ -3,6 +3,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from core.models import SocialMedia
+from django.conf import settings
 from django.db.models import Avg
 # from cloudinary.models import CloudinaryField 
 # from .models import SocialMedia
@@ -80,31 +81,27 @@ class Service(models.Model):
     tags = TaggableManager()
 
 
-    # @property
-    # def location(self):
-    #     """
-    #     Shortcut to get the primary (first) location for this service.
-    #     If you have just one location per service,
-    #     this makes your code more concise.
-    #     """
-    #     return self.locations.first()
 
-    # def __str__(self):
-    #     return self.title
+    def average_rating(self):
+        return self.reviews.aggregate(models.Avg('rating'))['rating__avg'] or 0
 
-
-    def get_average_rating(self):
-        # Calculate the average rating for this service
-        avg_rating = self.reviews.aggregate(Avg('rating'))['rating__avg']
-        return avg_rating or 0  # Return 0 if no reviews exist
-
+    def review_count(self):
+        return self.reviews.count()
+    
     def __str__(self):
         return self.title
     
+class Review(models.Model):
+    service = models.ForeignKey(Service, related_name='reviews', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.DecimalField(max_digits=2, decimal_places=1)  # 0.0 to 5.0
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=True)
 
-
-
-
+    class Meta:
+        unique_together = ('service', 'user')
+    
 class Location(models.Model):
     PHONE_CODE_CHOICES = [
         ('+371', 'Latvija (+371)'),
@@ -123,8 +120,6 @@ class Location(models.Model):
     # city = models.CharField(max_length=255)
     # address = models.TextField()
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True, verbose_name="Valsts")
-
-
     location_title = models.CharField(max_length=100)
     location_description = models.TextField()
     region = models.CharField(max_length=100, blank=True, null=True, verbose_name="Reģions")  # State/Province
@@ -132,7 +127,6 @@ class Location(models.Model):
     street = models.CharField(max_length=200, blank=True, null=True, verbose_name="Iela")
     postal_code = models.CharField(max_length=20, blank=True, null=True, verbose_name="Pasta indekss")
     full_address = models.TextField(blank=True, null=True, verbose_name="Adrese")  # Optional, for storing formatted address
-
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, verbose_name="Ģeogrāfiskais platums")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, verbose_name="Ģeogrāfiskais garums")
     #phone_number = models.CharField(max_length=15, null=True, blank=True)
@@ -148,6 +142,7 @@ class Location(models.Model):
 
     def __str__(self):
         return f'{self.service.title} - {self.city}'
+    
 
 
 class WorkingHour(models.Model):
@@ -170,17 +165,32 @@ class WorkingHour(models.Model):
         unique_together = ('location', 'day')
         ordering = ['day']
 
+
+
     def __str__(self):
         return f'{self.location.city} - {self.get_day_display()}: {self.from_hour}–{self.to_hour}'
 
 
-class Review(models.Model):
-    service = models.ForeignKey(Service, related_name='reviews', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])  # 1-5 stars
-    comment = models.TextField(blank=True)
+# class Review(models.Model):
+#     service = models.ForeignKey(Service, related_name='reviews', on_delete=models.CASCADE)
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     rating = models.DecimalField(max_digits=2, decimal_places=1)  # 0.0 to 5.0
+#     comment = models.TextField()
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     is_approved = models.BooleanField(default=True)
+
+#     class Meta:
+#         unique_together = ('service', 'user')
+
+class UserServiceFavorites(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_favorites")
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="favorited_by")
     created_at = models.DateTimeField(auto_now_add=True)
-    is_approved = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('service', 'user')
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'service'], name='unique_user_service')
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.service.id}"
