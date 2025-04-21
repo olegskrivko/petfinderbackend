@@ -365,6 +365,8 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # print("STRIPE_SECRET_KEY:", STRIPE_SECRET_KEY)
 # print(os.getenv("STRIPE_SECRET_KEY"))
 
+# settings.py
+API_BASE_URL = os.getenv("API_BASE_URL")
 
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": os.getenv("VAPID_PUBLIC_KEY"),
