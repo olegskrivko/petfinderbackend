@@ -92,6 +92,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
 class ServiceDetailView(generics.RetrieveAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = 'id'
 
 

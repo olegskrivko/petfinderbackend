@@ -263,7 +263,7 @@ class PetViewSet(viewsets.ModelViewSet):
 
 class PetSightingView(APIView):
     """Handles creating pet sighting entry (POST), listing pet sightings (GET), and deleting a sighting (DELETE)"""
-
+    permission_classes = [IsAuthenticatedOrReadOnly]
     def get(self, request, id):
         # List pet sightings for a specific pet
         pet = get_object_or_404(Pet, id=id)

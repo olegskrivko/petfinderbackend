@@ -280,6 +280,8 @@ REST_FRAMEWORK = {
     # Permission classes
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # Restrict access to authenticated users only
+        #'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+
     ],
     # Throttling settings (Rate limiting)
     # 'DEFAULT_THROTTLE_CLASSES': [
