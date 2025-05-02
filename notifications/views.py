@@ -40,116 +40,19 @@ from .models import PushSubscription
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from .models import PushSubscription
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 import requests
 import logging
 from pywebpush import webpush, WebPushException
 
 vapid_private_key = settings.WEBPUSH_SETTINGS.get("VAPID_PRIVATE_KEY")
-# vapid_public_key = settings.WEBPUSH_SETTINGS.get("VAPID_PUBLIC_KEY")
-# vapid_admin_email = settings.WEBPUSH_SETTINGS.get("VAPID_ADMIN_EMAIL")
+
 
 logger = logging.getLogger(__name__)
 
 VAPID_PRIVATE_KEY = f"{vapid_private_key}"
-# VAPID_CLAIMS = {
-#     "sub": f"mailto:{vapid_admin_email}"
-# }
-# VAPID_PRIVATE_KEY = "<your-vapid-private-key>"
-# VAPID_CLAIMS = {
-#     "sub": "mailto:admin@example.com"
-# }
-# @csrf_exempt  # Disable CSRF for this view, typically used for API calls
-# @login_required  # Ensure the user is authenticated
-# def save_subscription(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)  # Get the request data as JSON
-#             endpoint = data.get('endpoint')
-#             p256dh = data.get('p256dh')
-#             auth = data.get('auth')
 
-#             if not all([endpoint, p256dh, auth]):
-#                 return JsonResponse({"error": "Missing required fields"}, status=400)
-
-#             # Check if the user already has a subscription for this endpoint
-#             existing_subscription = PushSubscription.objects.filter(user=request.user, endpoint=endpoint).first()
-#             if existing_subscription:
-#                 return JsonResponse({"message": "Subscription already exists"}, status=200)
-
-#             # Create a new PushSubscription
-#             subscription = PushSubscription(user=request.user, endpoint=endpoint, p256dh=p256dh, auth=auth)
-#             subscription.save()
-
-#             return JsonResponse({"message": "Subscription saved successfully"}, status=201)
-#         except json.JSONDecodeError:
-#             return JsonResponse({"error": "Invalid JSON format"}, status=400)
-#     return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
-
-
-# @login_required  # Ensure the user is authenticated
-# def unsubscribe(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             endpoint = data.get('endpoint')
-
-#             if not endpoint:
-#                 return JsonResponse({"error": "Endpoint is required"}, status=400)
-
-#             # Delete the user's subscription with the given endpoint
-#             subscription = PushSubscription.objects.filter(user=request.user, endpoint=endpoint).first()
-#             if not subscription:
-#                 return JsonResponse({"error": "Subscription not found"}, status=404)
-
-#             subscription.delete()
-
-#             return JsonResponse({"message": "Unsubscribed successfully"}, status=200)
-
-#         except json.JSONDecodeError:
-#             return JsonResponse({"error": "Invalid JSON format"}, status=400)
-#     return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
-# @login_required
-# def send_notification(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             title = data.get('title')
-#             body = data.get('body')
-#             url = data.get('url')
-
-#             if not all([title, body]):
-#                 return JsonResponse({"error": "Missing required fields: title and body"}, status=400)
-
-#             # Get all subscriptions for the user
-#             subscriptions = PushSubscription.objects.filter(user=request.user)
-#             if not subscriptions:
-#                 return JsonResponse({"error": "No subscriptions found for this user"}, status=404)
-
-#             # For each subscription, send a notification (simplified example)
-#             for subscription in subscriptions:
-#                 # Replace this with actual push notification logic using the subscription's endpoint, p256dh, and auth
-#                 push_data = {
-#                     "title": title,
-#                     "body": body,
-#                     "url": url
-#                 }
-#                 headers = {
-#                     'Content-Type': 'application/json',
-#                     # You would need the correct headers and authentication here
-#                 }
-#                 response = requests.post(subscription.endpoint, json=push_data, headers=headers)
-#                 # Check if the response from the push server was successful
-#                 if response.status_code != 200:
-#                     return JsonResponse({"error": "Failed to send notification"}, status=500)
-
-#             return JsonResponse({"message": "Notification sent successfully"}, status=200)
-#         except json.JSONDecodeError:
-#             return JsonResponse({"error": "Invalid JSON format"}, status=400)
-#     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -308,3 +211,17 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_207_MULTI_STATUS)
 
             return Response({"message": "Notification sent successfully!"}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def is_subscribed(self, request):
+        """
+        Check if the current user is subscribed (optionally filtered by endpoint).
+        """
+        endpoint = request.query_params.get("endpoint")
+        print("endpoint", endpoint)
+        if not endpoint:
+            return Response({"error": "Missing 'endpoint' query param."}, status=status.HTTP_400_BAD_REQUEST)
+
+        exists = PushSubscription.objects.filter(user=request.user, endpoint=endpoint).exists()
+        print("exists", exists)
+        return Response({"subscribed": exists}, status=status.HTTP_200_OK)
