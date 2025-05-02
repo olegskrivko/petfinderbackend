@@ -162,53 +162,64 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = PushSubscription.objects.all()
     serializer_class = PushSubscriptionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]  # Allow public read access, but auth required for write operations
-    
-    # Custom action for subscribing (this is already handled by DRF's ModelViewSet `create` method)
+
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticatedOrReadOnly])
     def subscribe(self, request):
         """
-        Handle the subscription logic (saving the subscription).
+        Handle the subscription logic (saving or updating the subscription).
         """
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
 
         subscription_data = request.data
-        subscription = PushSubscription(
+        endpoint = subscription_data.get('endpoint')
+        p256dh = subscription_data.get('p256dh')
+        auth = subscription_data.get('auth')
+        lat = subscription_data.get('lat', 56.946)
+        lon = subscription_data.get('lon', 24.1059)
+        distance = subscription_data.get('distance', 200.0)
+
+        if not endpoint or not p256dh or not auth:
+            return Response({"error": "Missing subscription data."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use update_or_create to handle existing devices
+        subscription, created = PushSubscription.objects.update_or_create(
             user=request.user,
-            endpoint=subscription_data['endpoint'],
-            p256dh=subscription_data['p256dh'],
-            auth=subscription_data['auth']
+            endpoint=endpoint,
+            defaults={
+                'p256dh': p256dh,
+                'auth': auth,
+                'lat': lat,
+                'lon': lon,
+                'distance': distance,
+            }
         )
-        subscription.save()
-        return Response({"message": "Subscription saved!"}, status=status.HTTP_201_CREATED)
-    # def save_subscription(request):
-    #     if request.method == "POST":
-    #         data = json.loads(request.body)
 
-    #         # Extract the subscription data
-    #         endpoint = data.get('endpoint')
-    #         p256dh = data.get('p256dh')
-    #         auth = data.get('auth')
-    #         print(f"Endpoint: {endpoint}")
-    #         print(f"p256dh: {p256dh}")
-    #         print(f"auth: {auth}")
+        return Response(
+            {"message": "Subscription saved!" if created else "Subscription updated."},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
 
-    #         # Check if these values are non-empty
-    #         if not endpoint or not p256dh or not auth:
-    #             return JsonResponse({"error": "Invalid subscription data"}, status=400)
+    
+    # Custom action for subscribing (this is already handled by DRF's ModelViewSet `create` method)
+    # @action(detail=False, methods=['post'], permission_classes=[IsAuthenticatedOrReadOnly])
+    # def subscribe(self, request):
+    #     """
+    #     Handle the subscription logic (saving the subscription).
+    #     """
+    #     if not request.user.is_authenticated:
+    #         return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
 
-    #         # Assuming user is authenticated and you can get the user object
-    #         user = request.user
+    #     subscription_data = request.data
+    #     subscription = PushSubscription(
+    #         user=request.user,
+    #         endpoint=subscription_data['endpoint'],
+    #         p256dh=subscription_data['p256dh'],
+    #         auth=subscription_data['auth']
+    #     )
+    #     subscription.save()
+    #     return Response({"message": "Subscription saved!"}, status=status.HTTP_201_CREATED)
 
-    #         # Create or update the subscription in the database
-    #         subscription, created = PushSubscription.objects.update_or_create(
-    #             user=user, endpoint=endpoint,
-    #             defaults={'p256dh': p256dh, 'auth': auth}
-    #         )
-
-    #         return JsonResponse({"message": "Subscription saved successfully"})
-
-    #     return JsonResponse({"error": "Invalid method"}, status=405)
 
     # Custom action for unsubscribing (removes the subscription from the database)
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticatedOrReadOnly])
