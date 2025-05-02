@@ -105,6 +105,12 @@ class Pet(models.Model):
     def __str__(self):
         return f"Pet {self.id}"
     
+    # def get_status_display(self):
+    #     return dict(self.STATUS_CHOICES).get(self.status)
+
+    # def get_species_display(self):
+    #     return dict(self.SPECIES_CHOICES).get(self.species)
+    
 
 class PetSightingHistory(models.Model):
     STATUS_CHOICES = [

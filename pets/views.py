@@ -35,7 +35,34 @@ from django.core.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django_filters import DateFilter
+# from .models import PushSubscription
+from math import radians, sin, cos, sqrt, atan2
+from django.http import JsonResponse
+from django.conf import settings
+from notifications.models import PushSubscription
 
+from notifications.utils import send_push_notification  # Import the push notification function
+def calculate_distance(lat1, lon1, lat2, lon2):
+    # Radius of the Earth in kilometers
+    R = 6371.0
+
+    # Convert latitude and longitude from degrees to radians
+    lat1_rad = radians(lat1)
+    lon1_rad = radians(lon1)
+    lat2_rad = radians(lat2)
+    lon2_rad = radians(lon2)
+
+    # Difference in coordinates
+    dlon = lon2_rad - lon1_rad
+    dlat = lat2_rad - lat1_rad
+
+    # Haversine formula
+    a = sin(dlat / 2)**2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    # Distance in kilometers
+    distance = R * c
+    return distance
 User = get_user_model()
 
 class PetFilter(filters.FilterSet):
@@ -241,6 +268,9 @@ class PetViewSet(viewsets.ModelViewSet):
             event_occurred_at=event_occurred_at,
              **uploaded_images  # Dynamically assign images
         )
+        # Send notification if status is 'lost'
+        if pet.status == 1:  # Or any other condition you want
+            self.send_notifications_for_lost_pet(pet.id)
 
     def retrieve(self, request, pk=None):
         pet = get_object_or_404(Pet, pk=pk)
@@ -259,6 +289,31 @@ class PetViewSet(viewsets.ModelViewSet):
         pet = get_object_or_404(Pet, pk=pk, author=request.user)
         pet.delete()
         return Response({"message": "Pet deleted successfully."}, status=204)
+    
+    def send_notifications_for_lost_pet(self, pet_id):
+        pet = Pet.objects.get(id=pet_id)
+
+        subscriptions = PushSubscription.objects.all()
+        nearby_users = []
+
+        for subscription in subscriptions:
+            distance = calculate_distance(pet.latitude, pet.longitude, subscription.lat, subscription.lon)
+            if distance <= subscription.distance:
+                nearby_users.append(subscription)
+
+
+        for subscription in nearby_users:
+            # Check if the pet has an image URL in pet_image_1, otherwise use a default image
+            image_url = pet.pet_image_1 if pet.pet_image_1 else "https://example.com/default-image.jpg"
+            payload = {
+                "title": f"Uzmanību! Netālu no jums ir {pet.get_status_display()} mājdzīvnieks!",
+                "body": f"Netālu no jūsu atrašanās vietas ir {pet.get_status_display()} {pet.get_species_display()}!",
+                "url": f"{settings.DOMAIN_APP_URL}/pets/{pet.id}",
+                "image": image_url  # Add the image URL to the payload
+            }
+            send_push_notification(subscription, payload)
+
+        return JsonResponse({"status": "Notifications sent to nearby users."})
 
 
 class PetSightingView(APIView):

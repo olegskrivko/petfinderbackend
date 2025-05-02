@@ -279,6 +279,7 @@ REST_FRAMEWORK = {
     ],
     # Permission classes
     'DEFAULT_PERMISSION_CLASSES': [
+        # 'rest_framework.permissions.AllowAny',
         'rest_framework.permissions.IsAuthenticated',  # Restrict access to authenticated users only
         #'rest_framework.permissions.IsAuthenticatedOrReadOnly',
 
@@ -376,6 +377,7 @@ WEBPUSH_SETTINGS = {
     "VAPID_ADMIN_EMAIL": os.getenv("VAPID_ADMIN_EMAIL"),
 }
 
+DOMAIN_APP_URL = os.getenv("DOMAIN_APP_URL")
 
 """
 Steps to fully reset your Django DB (PostgreSQL)
