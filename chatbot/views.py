@@ -233,7 +233,8 @@ import os
 from openai import OpenAI
 
 # Load environment variables
-load_dotenv()
+# load_dotenv()
+load_dotenv("/etc/secrets/.env")  
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

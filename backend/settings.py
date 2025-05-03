@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-
-load_dotenv()  # Load environment variables from .env
+load_dotenv("/etc/secrets/.env") 
+#load_dotenv()  # Load environment variables from .env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
