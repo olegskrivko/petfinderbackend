@@ -8,16 +8,33 @@ class WorkingHourSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkingHour
         fields = '__all__' 
+# correct was workign
+# class LocationSerializer(serializers.ModelSerializer):
+#     working_hours = WorkingHourSerializer(many=True, read_only=True)
+#     latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+#     longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+
+#     class Meta:
+#         model = Location
+#         fields = '__all__' 
 
 class LocationSerializer(serializers.ModelSerializer):
-    working_hours = WorkingHourSerializer(many=True, read_only=True)
-    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
-    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+    working_hours = WorkingHourSerializer(many=True)
 
     class Meta:
         model = Location
-        fields = '__all__' 
-        # fields = ['id', 'city', 'address', 'phone_number', 'email', 'working_hours']
+        fields = '__all__'
+
+    def create(self, validated_data):
+        # Extract the nested working_hours data
+        working_hours_data = validated_data.pop('working_hours', [])
+        # Create the Location object
+        location = Location.objects.create(**validated_data)
+        # Create the working hours for the location
+        for wh_data in working_hours_data:
+            WorkingHour.objects.create(location=location, **wh_data)
+        return location
+
 
 class SocialMediaSerializer(serializers.ModelSerializer):
     platform = serializers.CharField(source='get_platform_display', read_only=True)

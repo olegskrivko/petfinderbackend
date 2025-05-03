@@ -170,18 +170,6 @@ class WorkingHour(models.Model):
     def __str__(self):
         return f'{self.location.city} - {self.get_day_display()}: {self.from_hour}–{self.to_hour}'
 
-
-# class Review(models.Model):
-#     service = models.ForeignKey(Service, related_name='reviews', on_delete=models.CASCADE)
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     rating = models.DecimalField(max_digits=2, decimal_places=1)  # 0.0 to 5.0
-#     comment = models.TextField()
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     is_approved = models.BooleanField(default=True)
-
-#     class Meta:
-#         unique_together = ('service', 'user')
-
 class UserServiceFavorites(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_favorites")
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="favorited_by")

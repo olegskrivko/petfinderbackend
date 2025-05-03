@@ -30,6 +30,9 @@ urlpatterns = [
     path("api/feedback/", include("feedback.urls")),
     path("api/payments/", include("payments.urls")),
     path('api/notifications/', include('notifications.urls')),  # Notifications routes for push subscriptions
+    # Add the chatbot API route
+    path('api/chat/', include('chatbot.urls')),  # Include the chatbot app's URLs
+    
     path('api/', include('articles.urls')),  # Include the articles app's URLs under 'api/'
 ]
 

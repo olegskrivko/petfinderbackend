@@ -5,6 +5,7 @@ from rest_framework import viewsets, generics
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Service, WorkingHour, Location, Review
 from .serializers import ServiceSerializer, ReviewSerializer
+import cloudinary.uploader
 # from .filters import ServiceFilter
 # Add this at the top if you haven't already
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -58,36 +59,112 @@ class ServiceFilter(filters.FilterSet):
     class Meta:
         model = Service
         fields = ['search', 'category']
+# correct
+# class ServiceViewSet(viewsets.ModelViewSet):
+#     queryset = Service.objects.all().order_by('-created_at') # Order by created_at in descending order (most recent first)
+#     serializer_class = ServiceSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly] # Allow public read access, but auth required for write operations
+#     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+#     filterset_class = ServiceFilter
+#     pagination_class = ServicePagination
+
+#     #search_fields = ['title', 'description', 'location__address']  # example searchable fields
+
+#     parser_classes = (MultiPartParser, FormParser)
+#     def get_queryset(self):
+#         return super().get_queryset()
+    
+#     def list(self, request, *args, **kwargs):
+#         # The pagination logic is handled automatically by the pagination class
+#         return super().list(request, *args, **kwargs)
+
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user)
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by('-created_at') # Order by created_at in descending order (most recent first)
+    queryset = Service.objects.all().order_by('-created_at')  # Order by created_at in descending order
     serializer_class = ServiceSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly] # Allow public read access, but auth required for write operations
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Allow public read access, but auth required for write operations
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
     pagination_class = ServicePagination
-
-    #search_fields = ['title', 'description', 'location__address']  # example searchable fields
-
     parser_classes = (MultiPartParser, FormParser)
+
     def get_queryset(self):
         return super().get_queryset()
-    
+
     def list(self, request, *args, **kwargs):
         # The pagination logic is handled automatically by the pagination class
         return super().list(request, *args, **kwargs)
 
+    # def perform_create(self, serializer):
+    #     """
+    #     Override perform_create to ensure the user is associated with the service.
+    #     This method will be called when a new service is created.
+    #     """
+    #     service = serializer.save(user=self.request.user)
+
+    #     # If there are locations and working hours provided, create them.
+    #     locations_data = serializer.validated_data.get('locations', [])
+    #     for location_data in locations_data:
+    #         working_hours_data = location_data.get('working_hours', [])
+    #         location = Location.objects.create(service=service, **location_data)
+    #         for wh_data in working_hours_data:
+    #             WorkingHour.objects.create(location=location, **wh_data)
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        image = self.request.FILES.get("image")
+        image_url = None
 
-# class ServiceViewSet(viewsets.ModelViewSet):
-#     queryset = Service.objects.all()
-#     serializer_class = ServiceSerializer
-#     filter_backends = (DjangoFilterBackend,)
-#     filterset_class = ServiceFilter
+        if image:
+            uploaded_image = cloudinary.uploader.upload(image)
+            image_url = uploaded_image.get("secure_url")
 
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
+        # Save the service with the image and user
+        service = serializer.save(user=self.request.user, image=image_url)
+
+        # Handle nested location and working hour data
+        locations_data = serializer.validated_data.get('locations', [])
+        for location_data in locations_data:
+            working_hours_data = location_data.pop('working_hours', [])
+            location = Location.objects.create(service=service, **location_data)
+            for wh_data in working_hours_data:
+                WorkingHour.objects.create(location=location, **wh_data)
+
+
+    def create(self, request, *args, **kwargs):
+        """
+        Override the create method to handle nested Location and WorkingHour creation.
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Override update method to handle updates for nested data (Location & WorkingHour).
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            service = serializer.save(user=self.request.user)  # Optionally, associate the user during update
+            locations_data = serializer.validated_data.get('locations', [])
+            
+            # Delete old locations and working hours
+            instance.locations.all().delete()
+
+            # Re-create locations and their working hours
+            for location_data in locations_data:
+                working_hours_data = location_data.get('working_hours', [])
+                location = Location.objects.create(service=service, **location_data)
+                for wh_data in working_hours_data:
+                    WorkingHour.objects.create(location=location, **wh_data)
+            
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ServiceDetailView(generics.RetrieveAPIView):
     queryset = Service.objects.all()
@@ -104,22 +181,6 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         service_id = self.kwargs['service_id']
         return Review.objects.filter(service_id=service_id)
 
-    # def perform_create(self, serializer):
-    #     user = self.request.user
-    #     service_id = self.kwargs['service_id']  # Get service_id from URL
-    #     service = Service.objects.get(id=service_id)
-        
-    #     # Try to get the existing review, if any
-    #     review, created = Review.objects.get_or_create(service=service, user=user)
-        
-    #     # If it's not a new review, update it
-    #     if not created:
-    #         review.rating = serializer.validated_data.get('rating', review.rating)
-    #         review.comment = serializer.validated_data.get('comment', review.comment)
-    #         review.save()
-    #     else:
-    #         # If it's a new review, save it
-    #         review = serializer.save(user=user, service=service)
     def perform_create(self, serializer):
         user = self.request.user
         service_id = self.kwargs['service_id']

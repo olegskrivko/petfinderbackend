@@ -134,6 +134,37 @@ def get_user_pets(request):
     serializer = PetSerializer(pets, many=True)
     return Response(serializer.data)
 
+# @api_view(['GET'])
+# @permission_classes([AllowAny])  # Or IsAuthenticated if needed
+# def get_pet_status_counts(request):
+#     """
+#     Return counts of pets by status:
+#     - lost (status=1)
+#     - found (status=2)
+#     - seen (status=3)
+#     """
+#     lost_count = Pet.objects.filter(status=1).count()
+#     found_count = Pet.objects.filter(status=2).count()
+#     seen_count = Pet.objects.filter(status=3).count()
+
+#     return Response({
+#         "lost": lost_count,
+#         "found": found_count,
+#         "seen": seen_count,
+#     })
+class PetStatusCountsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        lost_count = Pet.objects.filter(status=1).count()
+        found_count = Pet.objects.filter(status=2).count()
+        seen_count = Pet.objects.filter(status=3).count()
+
+        return Response({
+            'lost': lost_count,
+            'found': found_count,
+            'seen': seen_count,
+        })
 
 class PetPagination(PageNumberPagination):
     page_size = 6  # Default page size

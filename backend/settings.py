@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'authentication',  # Your authentication app
     'payments',
     'notifications',
+    'chatbot',
     'pets',  
     'shelters',
     'services',
