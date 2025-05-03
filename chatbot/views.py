@@ -234,7 +234,12 @@ from openai import OpenAI
 
 # Load environment variables
 # load_dotenv()
-load_dotenv("/etc/secrets/.env")  
+# load_dotenv("/etc/secrets/.env")  
+# Try loading from Render secret path, else fallback to local .env
+if os.path.exists("/etc/secrets/.env"):
+    load_dotenv("/etc/secrets/.env")
+else:
+    load_dotenv()  # local .env
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

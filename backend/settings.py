@@ -19,7 +19,13 @@ from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-load_dotenv("/etc/secrets/.env") 
+
+# Try loading from Render secret path, else fallback to local .env
+if os.path.exists("/etc/secrets/.env"):
+    load_dotenv("/etc/secrets/.env")
+else:
+    load_dotenv()  # local .env
+# load_dotenv("/etc/secrets/.env") 
 #load_dotenv()  # Load environment variables from .env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
