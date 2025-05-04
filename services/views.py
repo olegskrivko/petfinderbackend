@@ -3,9 +3,11 @@
 from rest_framework import serializers
 from rest_framework import viewsets, generics
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Service, WorkingHour, Location, Review
+from .models import Service,  Review #WorkingHour, Location,
 from .serializers import ServiceSerializer, ReviewSerializer
 import cloudinary.uploader
+from rest_framework import status
+
 # from .filters import ServiceFilter
 # Add this at the top if you haven't already
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -21,6 +23,9 @@ from django_filters import rest_framework as filters
 import django_filters
 from django.db.models import Q
 from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
+import json
+from .models import Service, Location
 User = get_user_model()
 
 class ServicePagination(PageNumberPagination):
@@ -36,17 +41,10 @@ class ServicePagination(PageNumberPagination):
             'results': data
         })
 
-# class ServiceFilter(django_filters.FilterSet):
 class ServiceFilter(filters.FilterSet):
-    # category = django_filters.CharFilter(field_name='category', lookup_expr='iexact')
     category = filters.NumberFilter(field_name='category', lookup_expr='exact')
     search = filters.CharFilter(method='filter_by_search', label='Search')
-    # search = django_filters.CharFilter(method='filter_search')
 
-    # def filter_search(self, queryset, name, value):
-    #     return queryset.filter(
-    #         Q(title__icontains=value) | Q(description__icontains=value)
-    #     )
     def filter_by_search(self, queryset, name, value):
         """Split the search string into separate terms. Allow searching on title and description"""
         terms = value.strip().split()
@@ -59,112 +57,139 @@ class ServiceFilter(filters.FilterSet):
     class Meta:
         model = Service
         fields = ['search', 'category']
-# correct
-# class ServiceViewSet(viewsets.ModelViewSet):
-#     queryset = Service.objects.all().order_by('-created_at') # Order by created_at in descending order (most recent first)
-#     serializer_class = ServiceSerializer
-#     permission_classes = [IsAuthenticatedOrReadOnly] # Allow public read access, but auth required for write operations
-#     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-#     filterset_class = ServiceFilter
-#     pagination_class = ServicePagination
-
-#     #search_fields = ['title', 'description', 'location__address']  # example searchable fields
-
-#     parser_classes = (MultiPartParser, FormParser)
-#     def get_queryset(self):
-#         return super().get_queryset()
-    
-#     def list(self, request, *args, **kwargs):
-#         # The pagination logic is handled automatically by the pagination class
-#         return super().list(request, *args, **kwargs)
-
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by('-created_at')  # Order by created_at in descending order
+    queryset = Service.objects.all().order_by('-created_at')
     serializer_class = ServiceSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Allow public read access, but auth required for write operations
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ServiceFilter
     pagination_class = ServicePagination
     parser_classes = (MultiPartParser, FormParser)
 
-    def get_queryset(self):
-        return super().get_queryset()
-
     def list(self, request, *args, **kwargs):
-        # The pagination logic is handled automatically by the pagination class
         return super().list(request, *args, **kwargs)
-
-    # def perform_create(self, serializer):
-    #     """
-    #     Override perform_create to ensure the user is associated with the service.
-    #     This method will be called when a new service is created.
-    #     """
-    #     service = serializer.save(user=self.request.user)
-
-    #     # If there are locations and working hours provided, create them.
-    #     locations_data = serializer.validated_data.get('locations', [])
-    #     for location_data in locations_data:
-    #         working_hours_data = location_data.get('working_hours', [])
-    #         location = Location.objects.create(service=service, **location_data)
-    #         for wh_data in working_hours_data:
-    #             WorkingHour.objects.create(location=location, **wh_data)
-
-    def perform_create(self, serializer):
-        image = self.request.FILES.get("image")
-        image_url = None
-
-        if image:
-            uploaded_image = cloudinary.uploader.upload(image)
-            image_url = uploaded_image.get("secure_url")
-
-        # Save the service with the image and user
-        service = serializer.save(user=self.request.user, image=image_url)
-
-        # Handle nested location and working hour data
-        locations_data = serializer.validated_data.get('locations', [])
-        for location_data in locations_data:
-            working_hours_data = location_data.pop('working_hours', [])
-            location = Location.objects.create(service=service, **location_data)
-            for wh_data in working_hours_data:
-                WorkingHour.objects.create(location=location, **wh_data)
-
-
+    
     def create(self, request, *args, **kwargs):
-        """
-        Override the create method to handle nested Location and WorkingHour creation.
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print("Received request data:", request.data)
 
-    def update(self, request, *args, **kwargs):
-        """
-        Override update method to handle updates for nested data (Location & WorkingHour).
-        """
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        # Step 1: Handle and extract location string → Python list
+        raw_locations = request.data.get("locations")
+        if isinstance(raw_locations, list):
+            raw_locations = raw_locations[0]  # because QueryDict stores it as list
+        try:
+            parsed_locations = json.loads(raw_locations) if raw_locations else []
+        except json.JSONDecodeError:
+            raise ValidationError({"locations": "Invalid JSON format for locations."})
 
-        if serializer.is_valid():
-            service = serializer.save(user=self.request.user)  # Optionally, associate the user during update
-            locations_data = serializer.validated_data.get('locations', [])
+        # Step 2: Copy request data and manually inject parsed locations
+        mutable_data = request.data.copy()
+        mutable_data.setlist("locations", [])  # wipe it to avoid confusion
+        serializer = self.get_serializer(data=mutable_data)
+        serializer.is_valid(raise_exception=True)
+
+        # Step 3: save and pass locations + images to perform_create
+        self.perform_create(serializer, parsed_locations)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer, locations_data):
+        print("hello from perform_create", locations_data)
+
+        uploaded_images = {}
+        uploaded_images_list = []
+
+        for i in range(1, 5):
+            image_field = f"service_image_{i}_media"
+            image = self.request.FILES.get(image_field)
+            if image:
+                uploaded_image = cloudinary.uploader.upload(image)
+                uploaded_images_list.append(uploaded_image.get("secure_url"))
+
+        if not uploaded_images_list:
+            raise ValidationError({"error": "At least one image must be uploaded."})
+
+        for index, image_url in enumerate(uploaded_images_list):
+            uploaded_images[f"service_image_{index+1}"] = image_url
+        for i in range(len(uploaded_images_list) + 1, 5):
+            uploaded_images[f"service_image_{i}"] = None
+
+        service = serializer.save(user=self.request.user, **uploaded_images)
+
+        # Create related location objects
+            # Create related location objects with correct field mapping
+        for loc in locations_data:
+            if not all(k in loc for k in ("title", "description", "lat", "lng", "region", "city", "street", "postal_code", "full_address" )):
+                raise ValidationError({"locations": "Each location must include title, description, lat, and lng."})
             
-            # Delete old locations and working hours
-            instance.locations.all().delete()
+            try:
+                lat = float(loc["lat"])
+                lng = float(loc["lng"])
+            except ValueError:
+                raise ValidationError({"locations": "Latitude and Longitude must be valid numbers."})
 
-            # Re-create locations and their working hours
-            for location_data in locations_data:
-                working_hours_data = location_data.get('working_hours', [])
-                location = Location.objects.create(service=service, **location_data)
-                for wh_data in working_hours_data:
-                    WorkingHour.objects.create(location=location, **wh_data)
-            
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            Location.objects.create(
+                service=service,
+                location_title=loc["title"],
+                location_description=loc["description"],
+                latitude=lat,
+                longitude=lng,
+                region=loc["region"],
+                city=loc["city"],
+                street=loc["street"],
+                postal_code=loc["postal_code"],
+                full_address=loc["full_address"],
+            )
+        # for loc in locations_data:
+        #     if not all(k in loc for k in ("title", "description", "lat", "lng")):
+        #         raise ValidationError({"locations": "Each location must include title, description, lat, and lng."})
+        #     Location.objects.create(service=service, **loc)
+
+# class ServiceViewSet(viewsets.ModelViewSet):
+#     queryset = Service.objects.all().order_by('-created_at')  # Order by created_at in descending order
+#     serializer_class = ServiceSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]  # Allow public read access, but auth required for write operations
+#     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+#     filterset_class = ServiceFilter
+#     pagination_class = ServicePagination
+#     parser_classes = (MultiPartParser, FormParser)
+
+#     # def get_queryset(self):
+#     #     return super().get_queryset()
+
+#     def list(self, request, *args, **kwargs):
+#         # The pagination logic is handled automatically by the pagination class
+#         return super().list(request, *args, **kwargs)
+
+       
+#     def perform_create(self, serializer):
+#         uploaded_images = {}
+#         uploaded_images_list = []  # Store uploaded images in order
+
+#         # Handle image uploads (at least one required)
+#         for i in range(1, 5):  # Loop from service_image_1 to service_image_4
+#             image_field = f"service_image_{i}_media"  # Field name from request
+#             image = self.request.FILES.get(image_field)
+
+#             if image:
+#                 uploaded_image = cloudinary.uploader.upload(image)
+#                 uploaded_images_list.append(uploaded_image.get("secure_url"))
+
+#         # Ensure at least one image is uploaded
+#         if not uploaded_images_list:
+#             raise ValidationError({"error": "At least one image must be uploaded."})
+
+#             # Assign images sequentially to service_image_1, service_image_2, etc.
+#         for index, image_url in enumerate(uploaded_images_list):
+#             print("image_url", image_url)
+#             uploaded_images[f"service_image_{index+1}"] = image_url  # Assign in order
+
+#             # Fill remaining image fields with None
+#         for i in range(len(uploaded_images_list) + 1, 5):  # Ensure all 4 fields exist
+        
+#             uploaded_images[f"service_image_{i}"] = None
+
+#         serializer.save(user=self.request.user, **uploaded_images)
 
 class ServiceDetailView(generics.RetrieveAPIView):
     queryset = Service.objects.all()

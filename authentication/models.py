@@ -36,6 +36,14 @@ class CustomUser(AbstractUser):
     is_active = models.BooleanField(default=False)  # Prevent login until verified
     is_verified = models.BooleanField(default=False)  # Tracks if email is verified
 
+    # Subscription
+    is_subscribed = models.BooleanField(default=False)
+    subscription_start = models.DateTimeField(null=True, blank=True)
+    subscription_end = models.DateTimeField(null=True, blank=True)
+    stripe_customer_id = models.CharField(max_length=255, null=True, blank=True)
+    subscription_type = models.CharField(max_length=50, null=True, blank=True)  # e.g., "monthly", "yearly"
+
+
     # Field to store the animal for the avatar
     avatar_animal = models.CharField(max_length=100, blank=True, null=True, default="Cat")  # Animal name for avatar
 
