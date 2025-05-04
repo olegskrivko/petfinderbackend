@@ -20,6 +20,7 @@ User = get_user_model()
 from django.conf import settings
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY  # Use your secret key
+endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
 # print("aaaaa", stripe.api_key)
 DOMAIN_APP_URL = os.getenv("DOMAIN_APP_URL")
 
@@ -78,38 +79,83 @@ def create_subscription_session(request):
         return Response({"error": str(e)}, status=400)
 
 
+# @csrf_exempt
+# def stripe_webhook(request):
+#     payload = request.body
+#     sig_header = request.headers.get("Stripe-Signature")
+#     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+#     try:
+#         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+#     except stripe.error.SignatureVerificationError:
+#         return HttpResponse(status=400)
+
+#     if event['type'] == 'checkout.session.completed':
+#         session = event['data']['object']
+#         customer_email = session.get('customer_email')
+
+#         # Optionally check session['mode'] == 'payment' or 'subscription'
+#         if session['mode'] == 'subscription':
+#             # Mark user as subscribed
+#             from django.contrib.auth import get_user_model
+#             User = get_user_model()
+#             try:
+#                 user = User.objects.get(email=customer_email)
+#                 user.is_subscribed = True
+#                 user.subscription_start = timezone.now()
+#                 user.stripe_customer_id = session.get('customer')  # Optional: save customer ID
+#                 user.subscription_type = "premium"  # Or derive from metadata or plan name
+#                 user.save()
+#             except User.DoesNotExist:
+#                 pass
+
+#         elif session['mode'] == 'payment':
+#             # Handle one-time payment logic (e.g., grant access to premium content)
+#             print(f"✅ One-time payment completed by {customer_email}")
+
+#     return HttpResponse(status=200)
+
+# Webhook to handle Stripe events
 @csrf_exempt
 def stripe_webhook(request):
     payload = request.body
     sig_header = request.headers.get("Stripe-Signature")
-    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
-
+    
+    # Verify the signature to ensure the request is from Stripe
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except stripe.error.SignatureVerificationError:
-        return HttpResponse(status=400)
+    except ValueError as e:
+        print(f"Invalid payload: {str(e)}")
+        return HttpResponse("Invalid payload", status=400)
+    except stripe.error.SignatureVerificationError as e:
+        print(f"Signature verification failed: {str(e)}")
+        return HttpResponse("Signature verification failed", status=400)
 
-    if event['type'] == 'checkout.session.completed':
+    # Process the event
+    event_type = event.get('type')
+    if event_type == 'checkout.session.completed':
         session = event['data']['object']
         customer_email = session.get('customer_email')
 
-        # Optionally check session['mode'] == 'payment' or 'subscription'
+        # Handle subscription mode
         if session['mode'] == 'subscription':
-            # Mark user as subscribed
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
             try:
                 user = User.objects.get(email=customer_email)
                 user.is_subscribed = True
                 user.subscription_start = timezone.now()
-                user.stripe_customer_id = session.get('customer')  # Optional: save customer ID
+                user.stripe_customer_id = session.get('customer')  # Save customer ID
                 user.subscription_type = "premium"  # Or derive from metadata or plan name
                 user.save()
+                print(f"User {user.email} subscribed successfully.")
             except User.DoesNotExist:
-                pass
+                print(f"User with email {customer_email} not found.")
 
+        # Handle one-time payment mode
         elif session['mode'] == 'payment':
-            # Handle one-time payment logic (e.g., grant access to premium content)
-            print(f"✅ One-time payment completed by {customer_email}")
+            print(f"One-time payment completed by {customer_email}")
 
-    return HttpResponse(status=200)
+    # Handle other event types if necessary
+    else:
+        print(f"Unhandled event type: {event_type}")
+
+    return HttpResponse(status=200)  # Respond to acknowledge the event
